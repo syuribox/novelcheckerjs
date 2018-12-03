@@ -312,7 +312,7 @@ function start_check(){
 	}
 	var rule_katakana = 0;
 	if( option_katakana ){
-		text = text.replace(/[ァ-ヴ･-ﾟ]([ァ-ヴ゛゜ー]*)/g, function(s){
+		text = text.replace(/[ァ-ヴ･-ﾟ]([ァ-ヴ゛゜゙゚ー]*)/g, function(s){
 			rule_katakana++;
 			return '<span class="rule_katakana">' + s + '</span>';
 		});
@@ -775,12 +775,15 @@ function check_katakana(exp){
 function start_check_katakana(){
 	var output = "";
 	output += "■カタカナ一覧\n";
-	output += check_katakana(/[ァ-ヺ][ァ-ヺー]*/g);
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*/g);
 	output += "\n■前後がひらがな「へ」\n";
-	output += check_katakana(/[へべぺ]+[ァ-ヺ][ァ-ヺー]*/g);
-	output += check_katakana(/[ァ-ヺ][ァ-ヺー]*[へべぺ]+/g);
+	output += check_katakana(/[へべぺ]+[ァ-ヺー゛゜゙゚]+/g);
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[へべぺ]+/g);
 	output += "\n■カナ罫線\n";
-	output += check_katakana(/[ァ-ヺ][ァ-ヺー]*[―—–‒－−─]+/g);
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[―—–‒－−─]+/g);
+	output += "\n■漢字[力口ニ]\n";
+	output += check_katakana(/[力口二][ァ-ヺ][ァ-ヺー゛゜゙゚]*/g);
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[力口二]/g);
 	var text = output.replace(/\n/g, "<br>")
 	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
 }
