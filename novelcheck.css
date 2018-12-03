@@ -1,0 +1,44 @@
+﻿@charset "utf-8";
+/* Copyright (c) 2018 syuribox
+*/
+
+body {color:#000; background-color:#fff}
+h1 {background-color:#ddf}
+
+div.result {font-family:"ＭＳ ゴシック", monospace}
+table.rule_result {border-collapse:collapse; border:2px solid #000}
+tr.rule_tr {border:1px solid #000}
+td.rule_type {border:1px solid #000; background-color:#eef0ff}
+td.rule_value {border:1px solid #000; background-color:#eeeeee}
+
+span.rule_highlight {background-color:#ff0}
+
+span.rule_linetop {background-color:#ff0}
+span.rule_bracket_indent {background-color:#ff0}
+span.rule_bracket_period {background-color:#ff0}
+span.rule_repeat_period {background-color:#ff0}
+span.rule_question_space {background-color:#ff0}
+span.rule_santen {background-color:#ff0}
+span.rule_dash {background-color:#ff0}
+span.rule_bracket_pair {background-color:#ff0}
+
+span.rule_line_end {background-color:#ffa}
+span.rule_line_end_imp {background-color:#ff0}
+
+span.rule_full_alnum {background-color:#bbf}
+span.rule_half_alnum {background-color:#bfb}
+span.rule_kanji {background-color:#fcf}
+span.rule_kanji_jinmei {background-color:#fcb}
+
+span.rule_bracket_inner1 {color:#e00}
+span.rule_bracket_inner2 {color:#0a0}
+span.rule_bracket_inner3 {color:#00f}
+span.rule_bracket_inner4 {color:#a0a}
+
+span.linenum {background-color:#fff; color:#111}
+
+div.resultext {border:1px solid #000; font-family:"ＭＳ ゴシック", monospace}
+
+@media screen and (max-width:600px){
+	#maintext {width:95%}
+}

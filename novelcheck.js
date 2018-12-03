@@ -1,0 +1,745 @@
+﻿// Novel Checker js
+// Copyright (c) 2018 syuribox
+
+function get_id(id){
+	return document.getElementById(id);
+}
+
+function html_escape(s){
+	return s.replace(/&/g,"&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function book_change(){
+	get_id('book_val').value = get_id('book').value;
+}
+
+function area_clear(){
+	document.mainform.maintext.value = "";
+}
+
+function open_option(){
+	if(get_id('check_options').style.display == 'none'){
+		get_id('check_options').style.display = 'block';
+	}else{
+		get_id('check_options').style.display = 'none'
+	}
+}
+function area_sample(){
+	var sample = '';
+	sample += '　地の文。\n';
+	sample += '行頭空白。\n';
+	sample += '　「空白括弧」\n';
+	sample += '　疑問符の後の空白？　です？例外：「括弧の直前？」連続！？　疑問符！！！です\n';
+	sample += '「セリフの句読点括弧。」\n';
+	sample += '　句読点連続、のチェック、、句点のチェック。。\n';
+	sample += '　三点リーダ…または・・・正しいのは2の倍数個……\n';
+	sample += '　ダッシューーまたは―正しいのは2の倍数個――\n';
+	sample += '　行末が句読点括弧以外の場所は閉じ括弧ミスか。忘れの可能性があります\n';
+	sample += '　ASCIIの半角123、ABC、全角１２３、ＡＢＣ、ａｂｃ。\n';
+	sample += '　巫女　味噌　魑魅魍魎　囁く　聳える\n';
+	get_id('maintext').value = sample;
+}
+
+function fixnum(i){
+	return ("_____" + i).substr(-6);
+}
+
+function is_kanji(c){
+	if((0x4e00 <= c && c <= 0x9fcf)
+		|| (0x3400 <= c && c <= 0x4dbf)
+		|| (0xf900 <= c && c <= 0xfadf)){
+		return true;
+	}
+	return false;
+}
+
+function file_opens(e){
+	read_files(e.target.files);
+}
+
+function read_files(files){
+	var file_size = 0;
+	for(var i = 0; i < files.length; i++){
+		file_size += files[0].size;
+	}
+	if( 500000 < file_size ){
+		if(false == window.confirm('合計ファイルサイズが500KB以上あります。\n' +
+				'ファイル読み込みを処理しますか？')){
+			return;
+		}
+	}
+	var encoding = 'UTF-8';
+	if(get_id('option_sjis').checked){
+		encoding = 'Shift_JIS';
+	}
+	var loader = function(e){
+		get_id('maintext').value = e.target.result;
+	}
+	var reader = new FileReader();
+	reader.onload = loader;
+	reader.readAsText(files[0], encoding);
+}
+
+
+function start_check(){
+	var option_linetop = get_id('option_linetop').checked;
+	var option_bracket_indent = get_id('option_bracket_indent').checked;
+	var option_question_space = get_id('option_question_space').checked;
+	var option_bracket_pair = get_id('option_bracket_pair').checked;
+	var option_bracket_pair2 = get_id('option_bracket_pair2').checked;
+	var option_bracket_period = get_id('option_bracket_period').checked;
+	var option_repeat_period = get_id('option_repeat_period').checked;
+	var option_santen = get_id('option_santen').checked;
+	var option_dash = get_id('option_dash').checked;
+	var option_line_end  = get_id('option_line_end').checked;
+	var option_line_end_imp  = get_id('option_line_end_imp').checked;
+
+	var option_full_alnum = get_id('option_full_alnum').checked;
+	var option_full_alnum_imp = get_id('option_full_alnum_imp').checked;
+	var option_half_alnum = get_id('option_half_alnum').checked;
+	var option_half_alnum_imp = get_id('option_half_alnum_imp').checked;
+	var option_kanji = get_id('option_kanji').checked;
+	var option_kanji_imp = get_id('option_kanji_imp').checked;
+	var option_kanji_jinmei = get_id('option_kanji_jinmei').checked;
+	var option_kanji_jinmei_imp = get_id('option_kanji_jinmei_imp').checked;
+	var option_linenum = get_id('option_linenum').checked;
+	var option_entity = get_id('option_entity').checked;
+
+	var rule_no_check = '----';
+
+	var text = get_id('maintext').value;
+	text = text.replace(/\r\n/g, "\n").replace(/\n+$/g, "");
+
+	var book = get_id('book_val').value;
+	var book_line = parseInt(book.replace(/([0-9]+)x([0-9]+)/, "$2"));
+	var book_col = parseInt(book.replace(/([0-9]+)x([0-9]+)/, "$1"));
+	var kanji_except = get_id('kanji_except').value;
+	
+	var line_val = 0;
+	var col_val = 0;
+	var char_count = 0;
+	var char_count_all = 0;
+	var line_count = 0;
+	var end_line = false;
+	for(var i = 0; i < text.length; i++){
+		var c1 = text.charAt(i);
+		if( c1 == '\n' ){
+			col_val = 0;
+			line_val++;
+			line_count++;
+			char_count_all++;
+			end_line = true;
+		}else{
+			end_line = false;
+			if( c1 == ' ' ){
+				char_count_all++;
+			}else if( c1 == '　' ){
+				char_count_all++;
+			}else if( c1 == '\t' ){
+				char_count_all++;
+			}else{
+				char_count++;
+			}
+			col_val++;
+			if( book_col < col_val ){
+				col_val = 1;
+				line_val++;
+			}
+		}
+	}
+	if( false == end_line ){
+		line_val++;
+		line_count++;
+	}
+	char_count_all += char_count;
+	var book_val_down = Math.round((line_val) * 10 / book_line);
+	var book_val_up = Math.floor(book_val_down / 10);
+	book_val_down = book_val_down - book_val_up * 10;
+
+	var char_hira = 0;
+	var char_kata = 0;
+	var char_kigou = 0;
+	var char_ascii = 0;
+	var char_kanji = 0;
+	for(var i = 0; i < text.length; i++){
+		var c2 = text.charAt(i);
+		if( -1 != c2.search(/[ぁ-\u309e]/) ){
+			char_hira++;
+		}else if( -1 != c2.search(/[ァ-\u30ff]/) ){
+			char_kata++;
+		}else if( -1 != c2.search(/[\u3000-\u303f]/) ){
+			char_kigou++; // 「」などの記号
+		}else if( -1 != c2.search(/[\u0000-\u007f]/) ){
+			char_ascii++;
+		}else{
+			// その他はとりあえず漢字
+			char_kanji++;
+		}
+	}
+
+	text = html_escape(text);
+	var rule_half_alnum = 0;
+	if( option_half_alnum ){
+		text = text.replace(/&lt;/g, "&%;").replace(/&gt;/g, "&%%;").replace(/&amp;/g, "&%%%;");
+		if(option_half_alnum_imp){
+			text = text.replace(/[a-zA-Z_0-91,.\-]+/g, function(s){
+				rule_half_alnum++;
+				return '<span class="rule_highlight">{半角英数}</span><span class="rule_half_alnum">' + s + '</span>';
+			});
+		}else{
+			text = text.replace(/[a-zA-Z_0-9,.\-]+/g, function(s){
+				rule_half_alnum++;
+				return '<span class="rule_half_alnum">' + s + '</span>';
+			});
+		}
+		text = text.replace(/&%;/g, "&lt;").replace(/&%%;/g, "&gt;").replace(/&%%%;/g, "&amp;");
+	}else{
+		rule_half_alnum = rule_no_check;
+	}
+
+	var rule_linetop = 0;
+	if(option_linetop){
+		text = text.replace(/^[^「『【≪〈《〔（［｛\(　\n]/mg, function(s){
+			rule_linetop++;
+			return '<span class="rule_linetop">{行頭空白}</span>' + s;
+		});
+	}else{
+		rule_linetop = rule_no_check;
+	}
+	var rule_bracket_indent = 0;
+	if(option_bracket_indent){
+		text = text.replace(/^[　 \t]+[「『【≪〈《〔（［｛\)]/mg, function(s){
+			rule_bracket_indent++;
+			return '<span class="rule_bracket_indent">{空白括弧}</span>' + s;
+		});
+	}else{
+		rule_bracket_indent = rule_no_check;
+	}
+	var rule_bracket_period = 0;
+	if(option_bracket_period){
+		text = text.replace(/[,\.。、，．][」』】≫〉》〕）］｝\)]/g, function(s){
+			rule_bracket_period++;
+			return '<span class="rule_bracket_indent">{句読点括弧}' + s.substr(0,1) + '</span>' + s.substr(1);
+		});
+	}else{
+		rule_bracket_period = rule_no_check;
+	}
+	var rule_question_space = 0;
+	if(option_question_space){
+		text = text.replace(/([？！\?\!☆♡♥♪]+)([^？！\?\!])/g, function(s, s1, s2){
+			if( -1 == s2.search(/[　」』】≫〉》〕）］｝\)\n]/) ){
+				rule_question_space++;
+				return '<span class="rule_question_space">{！？空白}' + s1 + '</span>' + s2;
+			}
+			return s;
+		});
+	}else{
+		rule_question_space = rule_no_check;
+	}
+
+	var rule_santen = 0;
+	if(option_santen){
+		text = text.replace(/…+/g, function(s){
+			if( s.length % 2 != 0 ){
+				rule_santen++;
+				return '<span class="rule_santen">{三点リーダ}' + s + '</span>';
+			}
+			return s;
+		});
+		text = text.replace(/([\(（《])?(・(・+))([\)）》])?/g, function(s,g1,g2,g3,g4){
+			if(g1 === undefined){
+				g1 = '';
+			}
+			if(g4 === undefined){
+				g4 = '';
+			}
+			var x = '(（《'.indexOf(g1);
+			var y = ')）》'.indexOf(g4);
+			if( x != -1 && x == y ){
+				// ルビ
+				return s;
+			}
+			rule_santen++;
+			return g1 + '<span class="rule_santen">{三点リーダ}' + g2 + '</span>' + g4;
+		});
+	}else{
+		rule_santen = rule_no_check;
+	}
+
+
+	var rule_bracket_pair = 0;
+	var rule_bracket_pair2 = 0;
+	var rule_line_end = 0;
+	var brackets = 0;
+	var prev = true;
+	var brackets_line = 0;
+	var brackets_types_arr = [];
+	var normal_line = 0;
+	var line_type = 0;
+	var line_num = 1;
+	var brackets_char = 0;
+	var normal_char = 0;
+	for(var i = 0; i < text.length; i++){
+		var mozi = text.charAt(i);
+		var brackets_types_1 = "「『【≪〈《〔［｛（([".indexOf(mozi);
+		var brackets_types_2 = "」』】≫〉》〕］｝）)]".indexOf(mozi);
+		if( -1 != brackets_types_1 ){
+			brackets_types_arr.push(brackets_types_1);
+			brackets++;
+			var s1 = '<span class="rule_bracket_inner' + ((brackets + 3) % 4 + 1) + '">';
+			text = text.substr(0, i) + s1 + text.substr(i);
+			i += s1.length;
+			prev = false;
+			if( line_type == 0 ){
+				line_type = 1; // 台詞行
+			}
+		} else if( -1 != brackets_types_2 ){
+			brackets--;
+			if( 0 <= brackets ){
+				var postion = brackets_types_arr.length - 1;
+				for(; 0 <= postion; postion--){
+					if( brackets_types_arr[postion] == brackets_types_2 ){
+						brackets_types_arr.splice(postion, 1);
+						break;
+					}
+				}
+				if( postion < 0 ){
+					if(option_bracket_pair2){
+						var s1 = '<span class="rule_bracket_pair">｛括弧対応：種別｝</span>';
+						text = text.substr(0, i) + s1 + text.substr(i);
+						i += s1.length;
+						rule_bracket_pair2++;
+					}
+				}
+			}
+			if( 0 <= brackets ){
+				var s2 = '</span>';
+				text = text.substr(0, i + 1) + s2 + text.substr(i + 1);
+				i += s2.length;
+			}
+			if( brackets < 0 ){
+				brackets_types_arr = [];
+				brackets = 0;
+				if(option_bracket_pair2){
+					var s1 = '<span class="rule_bracket_pair">｛括弧対応：閉じ｝</span>';
+					text = text.substr(0, i) + s1 + text.substr(i);
+					i += s1.length;
+					rule_bracket_pair2++;
+				}
+			}
+			// 閉じ括弧が後で普通の文字換算されてしまうので、ここで調整
+			if( 0 == brackets ){
+				brackets_char++;
+				normal_char--;
+			}
+			prev = true;
+		} else if( -1 != mozi.search(/[）\)]/) ){
+			// 心境の場合は行末可。ルビは考慮外
+			prev = true;
+		} else if( mozi === '\n' ){
+			if( option_bracket_pair ){
+				if( 0 < brackets && brackets <= 5 ){
+					var s1 = '<span class="rule_bracket_pair">{括弧内改行}</span>';
+					text = text.substr(0, i) + s1 + text.substr(i);
+					i += s1.length;
+					rule_bracket_pair++;
+				}
+			}
+			if( prev == false && option_line_end){
+				var s3 = '<span class="rule_line_end">＿</span>';
+				var s3imp = '<span class="rule_line_end_imp">{行末文字}</span>';
+				var s3_;
+				if( option_line_end_imp ){
+					s3_ = s3imp;
+				}else{
+					s3_ = s3;
+				}
+				text = text.substr(0, i) + s3_ + text.substr(i);
+				i += s3_.length;
+				rule_line_end++;
+			}
+			prev = true;
+			// line_type == 0の空行はカウントしない
+			if( line_type === 1 ){
+				brackets_line++;
+			}else if( line_type === 2 ) {
+				normal_line++;
+			}
+			line_type = 0;
+		} else if( -1 != mozi.search(/[”〟―…─,\.。、，．？！\?\!☆♡♥]/) ){
+			prev = true;
+		} else {
+			if( line_type == 0 ){
+				if( 0 < brackets ){
+					line_type = 1; // 台詞中の改行の次の行
+				}else{
+					line_type = 2; // 通常行
+				}
+			}
+			prev = false;
+		}
+		if( mozi !== '\n' ){
+			if( 0 < brackets ){
+				brackets_char++;
+			}else{
+				normal_char++;
+			}
+		}
+	}
+	if( brackets != 0 ){
+		text = text + '</span>';
+	}
+	if( line_type === 1 ){
+		brackets_line++;
+	}else {
+		normal_line++;
+	}
+	var brackets_line_per = Math.round(brackets_line * 100 / (brackets_line + normal_line));
+	var brackets_char_per = Math.round(brackets_char * 100 / (brackets_char + normal_char));
+
+	var char_all = char_hira + char_kata + char_kigou + char_ascii + char_kanji;
+	if(0 === char_all){
+		char_all = 1;
+	}
+	var char_hira_per = Math.round(char_hira * 100 / (char_all));
+	var char_kata_per = Math.round(char_kata * 100 / (char_all));
+	var char_kigou_per = Math.round(char_kigou * 100 / (char_all));
+	var char_ascii_per = Math.round(char_ascii * 100 / (char_all));
+	var char_kanji_per = Math.round(char_kanji * 100 / (char_all));
+
+	if(!option_bracket_pair){
+		rule_bracket_pair = rule_no_check;
+	}
+	if(!option_bracket_pair2){
+		rule_bracket_pair2 = rule_no_check;
+	}
+	if(!option_line_end){
+		rule_line_end = rule_no_check;
+	}
+
+	if(option_linenum){
+		line_num = 1;
+		text = text.replace(/\n/g, function(){
+				line_num++;
+				return '\n<span class="linenum">' + fixnum(line_num) + ':</span> ';
+		});
+		text = '<span class="linenum">' + fixnum(1) + ': </span>' + text;
+	}
+
+	var rule_repeat_period = 0;
+	if(option_repeat_period){
+		text = text.replace(/[。、，．\.]{2,999}/g, function(s){
+			rule_repeat_period++;
+			return '<span class="rule_repeat_period">{句読点連続}' + s + '</span>';
+		});
+	}else{
+		rule_repeat_period = rule_no_check;
+	}
+	var rule_dash = 0;
+	if(option_dash){
+		text = text.replace(/—/g,'―').replace(/―+/g, function(s){
+			if( s.length % 2 != 0 ){
+				rule_dash++;
+				return '<span class="rule_dash">{ダッシュ}' + s + '</span>';
+			}else{
+				return s;
+			}
+		});
+		text = text.replace(/ー(ー+)/g, function(s){
+			rule_dash++;
+			return '<span class="rule_dash">{ダッシュ}' + s + '</span>';
+		});
+	}else{
+		rule_dash = rule_no_check;
+	}
+	var rule_full_alnum = 0;
+	if( option_full_alnum ){
+		if(option_full_alnum_imp){
+			text = text.replace(/[Ａ-Ｚａ-ｚ０-９－，．]+/g, function(s){
+				rule_full_alnum++;
+				return '<span class="rule_highlight">{全角英数}</span><span class="rule_full_alnum">' + s + '</span>';
+			});
+		}else{
+			text = text.replace(/[Ａ-Ｚａ-ｚ０-９－，．]+/g, function(s){
+				rule_full_alnum++;
+				return '<span class="rule_full_alnum">' + s + '</span>';
+			});
+		}
+	}else{
+		rule_full_alnum = rule_no_check;
+	}
+
+	var rule_kanji = 0;
+	var rule_kanji_jinmei = 0;
+	if(option_kanji || option_kanji_jinmei){
+		var len = text.length;
+		var kanji = ret_kanji_list();
+		var kanji_jyoyo = kanji.jyoyo;
+		var kanji_jinmei = kanji.jinmei;
+		for(var i = 0; i < len; i++){
+			if(!is_kanji(text.charCodeAt(i))){
+				continue;// 漢字以外
+			}
+			if(-1 != kanji_jyoyo.indexOf(text.charAt(i))){
+				continue;
+			}
+			if(-1 != kanji_except.indexOf(text.charAt(i))){
+				continue; // 除外
+			}
+			if(-1 != kanji_jinmei.indexOf(text.charAt(i))){
+				if(option_kanji_jinmei){
+					var s1 = '<span class="rule_kanji_jinmei">';
+					if(option_kanji_imp){
+						s1 = '<span class="rule_highlight">{人名漢字}</span>' + s1;
+					}
+					var s2 = '</span>';
+					text = text.substr(0, i) + s1 + text.charAt(i) + s2 + text.substr(i + 1);
+					var n = s1.length + s2.length;
+					len += n;
+					i += n;
+					rule_kanji_jinmei++;
+				}
+			}else{
+				if(option_kanji){
+					var s1 = '<span class="rule_kanji">';
+					if(option_kanji_imp){
+						s1 = '<span class="rule_highlight">{表外漢字}</span>' + s1;
+					}
+					var s2 = '</span>';
+					text = text.substr(0, i) + s1 + text.charAt(i) + s2 + text.substr(i + 1);
+					var n = s1.length + s2.length;
+					len += n;
+					i += n;
+					rule_kanji++;
+				}
+			}
+		}
+	}
+	if(!rule_kanji){
+		rule_kanji = rule_no_check;
+	}
+	if(!option_kanji_jinmei){
+		rule_kanji_jinmei = rule_no_check;
+	}
+
+	text = text.replace(/\n/g, "<br>");
+
+	var rules = '<table class="rule_result">';
+	rules += '<tr class="rule_tr"><td class="rule_type">　　項目</td><td class="rule_type">　　値</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">原稿用紙（' + html_escape(book)+ '行)</td><td class="rule_value">' + book_val_up + '.' + book_val_down + '枚</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">文字数(空白改行除く)</td><td class="rule_value">' + char_count + '文字</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">文字数(空白改行含む)</td><td class="rule_value">' + char_count_all + '文字</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">行数</td><td class="rule_value">' + line_count + '行</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">台詞：地の文　台詞率</td><td class="rule_value">' + brackets_line + '：' + normal_line + '行　' + brackets_line_per + '%';
+		rules += ' ／ ' + brackets_char + '：' + normal_char + '文字　' + brackets_char_per + '%</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">かな：カナ：漢字：記号：ASCII</td><td class="rule_value">' + char_hira + '：' + char_kata  + '：' + char_kanji + '：' + char_kigou + '：' + char_ascii + '文字</td></tr>'
+	rules += '<tr class="rule_tr"><td class="rule_type">文字種%</td><td class="rule_value">ひら' +
+		char_hira_per + '：カタ' + char_kata_per  + '：漢字' + char_kanji_per + '：記号' + char_kigou_per + '：A' + char_ascii_per + '%</td></tr>'
+
+	rules += '<tr class="rule_tr"><td class="rule_type">　　項目</td><td class="rule_type">　　検出数</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">行頭空白</td><td class="rule_value">　' + rule_linetop + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">空白括弧</td><td class="rule_value">　' + rule_bracket_indent + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">！？空白</td><td class="rule_value">　' + rule_question_space + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">括弧内改行</td><td class="rule_value">　' + rule_bracket_pair + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">括弧対応</td><td class="rule_value">　' + rule_bracket_pair2 + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">句読点括弧</td><td class="rule_value">　' + rule_bracket_period + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">句読点連続</td><td class="rule_value">　' + rule_repeat_period + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">三点リーダ</td><td class="rule_value">　' + rule_santen + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">ダッシュ</td><td class="rule_value">　' + rule_dash + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">行末文字</td><td class="rule_value">　' + rule_line_end;
+	if( option_line_end && false == option_line_end_imp ){
+		rules += '　※<span class="rule_line_end">＿</span>(アンダーバー)';
+	}
+	rules += '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">全角英数</td><td class="rule_value">　' + rule_full_alnum;
+	if( option_full_alnum ){
+		rules += '　※<span class="rule_full_alnum">背景色</span>'
+	}
+	rules += '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">半角英数</td><td class="rule_value">　' + rule_half_alnum;
+	if( option_half_alnum ){
+		rules += '　※<span class="rule_half_alnum">背景色</span>';
+	}
+	rules += '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">表外漢字</td><td class="rule_value">　' + rule_kanji + '　※<span class="rule_kanji">背景色</span></td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">人名漢字</td><td class="rule_value">　' + rule_kanji_jinmei + '　※<span class="rule_kanji_jinmei">背景色</span></td></tr>';
+	rules += '</table><br>'
+
+	if(option_entity){
+		text = text.replace(/&amp;/g, '&');
+	}
+
+	get_id("result").innerHTML = rules + '<div class="resultext">' + text + '</div>';
+}
+
+function check_katakana(exp){
+	var text = get_id('maintext').value;
+	text = text.replace(/\r\n/g, "\n").replace(/\n+$/g, "");
+	var map = {};
+	text.replace(exp, function(a){
+			if(a in map){
+				map[a] += 1;
+			}else{
+				map[a] = 1;
+			}
+			return a;
+		}
+	);
+	var temp = [];
+	var i = 0;
+	for(var key in map){
+		temp[i] = key + ' ' +map[key];
+		i++;
+	}
+	temp.sort();
+	var size = temp.length;
+	var output = "";
+	for(i = 0; i < size; i++){
+		output += temp[i] + "\n"
+	}
+	return output;
+}
+
+function start_check_katakana(){
+	var output = "";
+	output += "■カタカナ一覧\n";
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー]*/g);
+	output += "\n■前後がひらがな「へ」\n";
+	output += check_katakana(/[へべぺ]+[ァ-ヺ][ァ-ヺー]*/g);
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー]*[へべぺ]+/g);
+	output += "\n■カナ罫線\n";
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー]*[―—–‒－−─]+/g);
+	var text = output.replace(/\n/g, "<br>")
+	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
+}
+
+function start_check_kanji_listup(){
+	var text = get_id('maintext').value;
+	text = text.replace(/\r\n/g, "\n").replace(/\n+$/g, "");
+
+	var output = "";
+
+	var rule_kanji = 0;
+	var rule_kanji_jinmei = 0;
+	
+	var len = text.length;
+	var kanji = ret_kanji_list();
+	var kanji_jyoyo = kanji.jyoyo;
+	var kanji_jinmei = kanji.jinmei;
+	var kanji_list = '';
+	var kanji_list_jinmei = '';
+	for(var i = 0; i < len; i++){
+		var c = text.charAt(i);
+		if(!is_kanji(text.charCodeAt(i))){
+			continue;// 漢字以外
+		}
+		if(-1 != kanji_jyoyo.indexOf(c)){
+			continue;
+		}
+		if(-1 != kanji_jinmei.indexOf(c)){
+			if(-1 == kanji_list_jinmei.indexOf(c)){
+				kanji_list_jinmei += c;
+			}
+			rule_kanji_jinmei++;
+		}else{
+			if(-1 == kanji_list.indexOf(c)){
+				kanji_list += c;
+			}
+			rule_kanji++;
+		}
+	}
+	kanji_len = kanji_list.length;
+	kanji_jinmei_len = kanji_list_jinmei.length;
+
+	kanji_list = kanji_list.replace(/.{20}/g, "$&\n");
+	kanji_list_jinmei = kanji_list_jinmei.replace(/.{20}/g, "$&\n");
+
+	output += '■使用表外漢字一覧(常用+人名以外)\n';
+	output += kanji_len + '字 ' + rule_kanji + '箇所\n'
+	output += kanji_list;
+	output += '\n■使用人名漢字一覧\n';
+	output += kanji_jinmei_len + '字 ' + rule_kanji_jinmei + '箇所\n'
+	output += kanji_list_jinmei;
+
+	var text = output.replace(/\n/g, "<br>")
+	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
+}
+
+function ret_kanji_list(){
+	var jyoyo = 
+	'亜哀挨愛曖悪握圧扱宛嵐安案暗以衣位囲医依委威為畏胃尉異移萎偉椅彙意違維慰遺緯域育一壱逸茨芋引印因咽姻' +
+	'員院淫陰飲隠韻右宇羽雨唄鬱畝浦運雲永泳英映栄営詠影鋭衛易疫益液駅悦越謁閲円延沿炎怨宴媛援園煙猿遠鉛塩' +
+	'演縁艶汚王凹央応往押旺欧殴桜翁奥横岡屋億憶臆虞乙俺卸音恩温穏下化火加可仮何花佳価果河苛科架夏家荷華菓' +
+	'貨渦過嫁暇禍靴寡歌箇稼課蚊牙瓦我画芽賀雅餓介回灰会快戒改怪拐悔海界皆械絵開階塊楷解潰壊懐諧貝外劾害崖' +
+	'涯街慨蓋該概骸垣柿各角拡革格核殻郭覚較隔閣確獲嚇穫学岳楽額顎掛潟括活喝渇割葛滑褐轄且株釜鎌刈干刊甘汗' +
+	'缶完肝官冠巻看陥乾勘患貫寒喚堪換敢棺款間閑勧寛幹感漢慣管関歓監緩憾還館環簡観韓艦鑑丸含岸岩玩眼頑顔願' +
+	'企伎危机気岐希忌汽奇祈季紀軌既記起飢鬼帰基寄規亀喜幾揮期棋貴棄毀旗器畿輝機騎技宜偽欺義疑儀戯擬犠議菊' +
+	'吉喫詰却客脚逆虐九久及弓丘旧休吸朽臼求究泣急級糾宮救球給嗅窮牛去巨居拒拠挙虚許距魚御漁凶共叫狂京享供' +
+	'協況峡挟狭恐恭胸脅強教郷境橋矯鏡競響驚仰暁業凝曲局極玉巾斤均近金菌勤琴筋僅禁緊錦謹襟吟銀区句苦駆具惧' +
+	'愚空偶遇隅串屈掘窟熊繰君訓勲薫軍郡群兄刑形系径茎係型契計恵啓掲渓経蛍敬景軽傾携継詣慶憬稽憩警鶏芸迎鯨' +
+	'隙劇撃激桁欠穴血決結傑潔月犬件見券肩建研県倹兼剣拳軒健険圏堅検嫌献絹遣権憲賢謙鍵繭顕験懸元幻玄言弦限' +
+	'原現舷減源厳己戸古呼固股虎孤弧故枯個庫湖雇誇鼓錮顧五互午呉後娯悟碁語誤護口工公勾孔功巧広甲交光向后好' +
+	'江考行坑孝抗攻更効幸拘肯侯厚恒洪皇紅荒郊香候校耕航貢降高康控梗黄喉慌港硬絞項溝鉱構綱酵稿興衡鋼講購乞' +
+	'号合拷剛傲豪克告谷刻国黒穀酷獄骨駒込頃今困昆恨根婚混痕紺魂墾懇左佐沙査砂唆差詐鎖座挫才再災妻采砕宰栽' +
+	'彩採済祭斎細菜最裁債催塞歳載際埼在材剤財罪崎作削昨柵索策酢搾錯咲冊札刷刹拶殺察撮擦雑皿三山参桟蚕惨産' +
+	'傘散算酸賛残斬暫士子支止氏仕史司四市矢旨死糸至伺志私使刺始姉枝祉肢姿思指施師恣紙脂視紫詞歯嗣試詩資飼' +
+	'誌雌摯賜諮示字寺次耳自似児事侍治持時滋慈辞磁餌璽鹿式識軸七叱失室疾執湿嫉漆質実芝写社車舎者射捨赦斜' +
+	'煮遮謝邪蛇尺借酌釈爵若弱寂手主守朱取狩首殊珠酒腫種趣寿受呪授需儒樹収囚州舟秀周宗拾秋臭修袖終羞習週就' +
+	'衆集愁酬醜蹴襲十汁充住柔重従渋銃獣縦叔祝宿淑粛縮塾熟出述術俊春瞬旬巡盾准殉純循順準潤遵処初所書庶暑署' +
+	'緒諸女如助序叙徐除小升少召匠床抄肖尚招承昇松沼昭宵将消症祥称笑唱商渉章紹訟勝掌晶焼焦硝粧詔証象傷奨照' +
+	'詳彰障憧衝賞償礁鐘上丈冗条状乗城浄剰常情場畳蒸縄壌嬢錠譲醸色拭食植殖飾触嘱織職辱尻心申伸臣芯身辛侵信' +
+	'津神唇娠振浸真針深紳進森診寝慎新審震薪親人刃仁尽迅甚陣尋腎須図水吹垂炊帥粋衰推酔遂睡穂随髄枢崇数据杉' +
+	'裾寸瀬是井世正生成西声制姓征性青斉政星牲省凄逝清盛婿晴勢聖誠精製誓静請整醒税夕斥石赤昔析席脊隻惜戚責' +
+	'跡積績籍切折拙窃接設雪摂節説舌絶千川仙占先宣専泉浅洗染扇栓旋船戦煎羨腺詮践箋銭潜線遷選薦繊鮮全前善然' +
+	'禅漸膳繕狙阻祖租素措粗組疎訴塑遡礎双壮早争走奏相荘草送倉捜挿桑巣掃曹曽爽窓創喪痩葬装僧想層総遭槽踪操' +
+	'燥霜騒藻造像増憎蔵贈臓即束足促則息捉速側測俗族属賊続卒率存村孫尊損遜他多汰打妥唾堕惰駄太対体耐待怠胎' +
+	'退帯泰堆袋逮替貸隊滞態戴大代台第題滝宅択沢卓拓託濯諾濁但達脱奪棚誰丹旦担単炭胆探淡短嘆端綻誕鍛団男段' +
+	'断弾暖談壇地池知値恥致遅痴稚置緻竹畜逐蓄築秩窒茶着嫡中仲虫沖宙忠抽注昼柱衷酎鋳駐著貯丁弔庁兆町長挑帳' +
+	'張彫眺釣頂鳥朝貼超腸跳徴嘲潮澄調聴懲直勅捗沈珍朕陳賃鎮追椎墜通痛塚漬坪爪鶴低呈廷弟定底抵邸亭貞帝訂庭' +
+	'逓停偵堤提程艇締諦泥的笛摘滴適敵溺迭哲鉄徹撤天典店点展添転田伝殿電斗吐妬徒途都渡塗賭土奴努度怒刀冬' +
+	'灯当投豆東到逃倒凍唐島桃討透党悼盗陶塔搭棟湯痘登答等筒統稲踏糖頭謄藤闘騰同洞胴動堂童道働銅導瞳峠匿特' +
+	'得督徳篤毒独読栃凸突届屯豚頓貪鈍曇丼那奈内梨謎鍋南軟難二尼弐匂肉虹日入乳尿任妊忍認寧熱年念捻粘燃悩納' +
+	'能脳農濃把波派破覇馬婆罵拝杯背肺俳配排敗廃輩売倍梅培陪媒買賠白伯拍泊迫舶博薄麦漠縛爆箱箸畑肌八鉢発' +
+	'髪伐抜罰閥反半氾犯帆汎伴判坂阪板版班畔般販斑飯搬煩頒範繁藩晩番蛮盤比皮妃否批彼披肥非卑飛疲秘被悲扉費' +
+	'碑罷避尾眉美備微鼻膝肘匹必泌筆姫百氷表俵票評漂標苗秒病描猫品浜貧賓頻敏瓶不夫父付布扶府怖阜附訃負赴浮' +
+	'婦符富普腐敷膚賦譜侮武部舞封風伏服副幅復福腹複覆払沸仏物粉紛雰噴墳憤奮分文聞丙平兵併並柄陛閉塀幣弊蔽' +
+	'餅米壁璧癖別蔑片辺返変偏遍編弁便勉歩保哺捕補舗母募墓慕暮簿方包芳邦奉宝抱放法泡胞俸倣峰砲崩訪報蜂豊飽' +
+	'褒縫亡乏忙坊妨忘防房肪某冒剖紡望傍帽棒貿貌暴膨謀北木朴牧睦僕墨撲没勃堀本奔翻凡盆麻摩磨魔毎妹枚昧埋' +
+	'幕膜枕又末抹万満慢漫未味魅岬密蜜脈妙民眠矛務無夢霧娘名命明迷冥盟銘鳴滅免面綿麺茂模毛妄盲耗猛網目黙門' +
+	'紋問冶夜野弥厄役約訳薬躍闇由油喩愉諭輸癒唯友有勇幽悠郵湧猶裕遊雄誘憂融優与予余誉預幼用羊妖洋要容庸揚' +
+	'揺葉陽溶腰様瘍踊窯養擁謡曜抑沃浴欲翌翼拉裸羅来雷頼絡落酪辣乱卵覧濫藍欄吏利里理痢裏履璃離陸立律慄略柳' +
+	'流留竜粒隆硫侶旅虜慮了両良料涼猟陵量僚領寮療瞭糧力緑林厘倫輪隣臨瑠涙累塁類令礼冷励戻例鈴零霊隷齢麗暦' +
+	'歴列劣烈裂恋連廉練錬呂炉賂路露老労弄郎朗浪廊楼漏籠六録麓論和話賄脇惑枠湾腕';
+	var jyoyo_ex = '塡剝頰'; // 第三水準
+	var jyoyo_ex2 = '𠮟'; // 第三水準・Unicode2面
+	var jinmei = 
+	'丑丞乃之乎也云亘亙些亦亥亨亮仔伊伍伽佃佑伶侃侑俄俣俐倭倦倖偲' +
+	'傭儲允兎兜其冴凌凜凛凧凪凰凱函劉劫勁勺勿匁匡廿卜卯卿厨厩叉叡' +
+	'叢叶只吾吻哉哨啄哩喬喧喰喋嘩嘉嘗噌噂圃圭坐尭堯坦埴堰堺堵塙壕' +
+	'壬夷奄奎套娃姪姥娩嬉孟宏宋宕宥寅寓寵尖尤屑峨峻崚嵯嵩嶺巌巖已' +
+	'巳巴巷巽帖幌幡庄庇庚庵廟廻弘弛彗彦彪彬徠忽怜恢恰恕悌惟惚悉惇' +
+	'惹惺惣慧憐戊或戟托按挺挽掬捲捷捺捧掠揃摺撒撰撞播撫擢孜敦斐斡' +
+	'斧斯於旭昂昊昏昌昴晏晃晄晒晋晟晦晨智暉暢曙曝曳朋朔杏杖杜李杭' +
+	'杵杷枇柑柴柘柊柏柾柚桧檜栞桔桂栖桐栗梧梓梢梛梯桶梶椛梁棲椋椀' +
+	'楯楚楕椿楠楓椰楢楊榎樺榊榛槙槇槍槌樫槻樟樋橘樽橙檎檀櫂櫛櫓欣' +
+	'欽歎此殆毅毘毬汀汝汐汲沌沓沫洸洲洵洛浩浬淵淳渚淀淋渥湘湊湛溢' +
+	'滉溜漱漕漣澪濡瀕灘灸灼烏焚煌煤煉熙燕燎燦燭燿爾牒牟牡牽犀狼猪' +
+	'獅玖珂珈珊珀玲琢琉瑛琥琶琵琳瑚瑞瑶瑳瓜瓢甥甫畠畢疋疏皐皓眸瞥' +
+	'矩砦砥砧硯碓碗碩碧磐磯祇祢禰祐祷禄祿禎禽禾秦秤稀稔稟稜穣穰穹' +
+	'穿窄窪窺竣竪竺竿笈笹笙笠筈筑箕箔篇篠簾籾粥粟糊紘紗紐絃紬絆絢' +
+	'綺綜綴緋綾綸縞徽纂纏羚翔翠耀而耶耽聡肇肋肴胤胡脩腔脹膏臥舜舵' +
+	'芥芹芭芙芦苑茄苔苺茅茉茸茜莞荻莫莉菅菫菖萄菩萌萠菱葦葵萱葺萩' +
+	'董葡蓑蒔蒐蒼蒲蒙蓉蓮蔭蔦蓬蔓蕎蕨蕉蕃蕪薙蕾蕗藁薩蘇蘭蝦蝶螺蟹' +
+	'衿袈袴裡裟裳襖訊訣註詢詫誼諏諄諒謂諺讃豹貰賑赳跨蹄蹟輔輯輿轟' +
+	'辰辻迂迄辿迪迦這逞逗逢遥遙遁遼邑祁郁鄭酉醇醐醍釉釘釧銑鋒鋸錘' +
+	'錐錆錫鍬鎧閃閏閤阿陀隈隼雀雁雛雫霞靖鞄鞍鞘鞠鞭頁頌頗颯饗馨馴' +
+	'馳駕駿驍魁魯鮎鯉鯛鰯鱒鱗鳩鳶鳳鴨鴻鵜鵬鷲鷺鷹麒麟麿黎黛鼎巫渾';
+	// 人名漢字第三・第四水準
+	var jinmei_ex =
+	'俱侮俠僧勉勤卑卽嘆器增墨寬層吞巢廊徵德悔憎懲揭摑擊敏晚暑曆朗' +
+	'梅橫欄步歷每海涉淚渚渴溫漢瀨焰煮狀猪琢碑社祉祈祐祖祝神祥禍禎' +
+	'福禱穀突節簞綠緖緣練繁繡署者臭萊著蔣薰虛虜蟬蠟視諸謁謹賓賴贈' +
+	'逸郞都醬錄鍊難響顚類鷗黃黑瘦繫';
+
+	return {jyoyo:jyoyo, jinmei:jinmei};
+}

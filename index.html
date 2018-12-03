@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ノベルチェッカー(js)</title>
+<!--
+	Copyright (c) 2018 syuribox
+-->
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width">
+<link rel="stylesheet" type="text/css" href="novelcheck.css">
+<link rel="stylesheet" type="text/css" href="novelcheck_sh.css" media="">
+<script type="text/javascript" src="novelcheck.js" charset="utf-8"></script>
+</head>
+<body>
+<h1>ノベルチェッカー(js)</h1>
+<form name="mainform">
+原稿用紙サイズ
+<select name="book" id="book" onchange="book_change()"><option value="20x20">20×20行</option>
+<option value="30x30">30×30行</option>
+<option value="30x40">30×40行</option>
+<option value="40x30">40×30行</option>
+<option value="40x40">40×40行</option>
+<option value="39x17">39×17行</option></select>
+<input type="text" name="book_val" id="book_val" value="20x20" maxlength="12" size="12"><br>
+<input type="button" id="clear" value="クリア" onclick="area_clear()">
+<input type="button" id="sample" value="サンプル文" onclick="area_sample()">
+<input type="checkbox" id="option_sjis" value="1" checked><label for="option_sjis">SJIS</label>
+<input type="file" onchange="file_opens(event)">
+<br>
+<textarea name="maintext" id="maintext" cols="60" rows="8">
+</textarea><br>
+<input type="button" id="start" value="オプション" onclick="open_option()">　
+<input type="button" id="start" value="構文チェック" onclick="start_check()">
+|
+<input type="button" id="katakana" value="カタカナ" onclick="start_check_katakana()">
+|
+<input type="button" id="kanji_list" value="漢字" onclick="start_check_kanji_listup()">
+<br>
+<div id="check_options" style="display:none">
+●オプション<br>
+<input type="checkbox" id="option_linetop" value="1" checked><label for="option_linetop">行頭空白</label> / 
+<input type="checkbox" id="option_bracket_indent" value="1" checked><label for="option_bracket_indent">空白括弧</label> / 
+<input type="checkbox" id="option_question_space" value="1" checked><label for="option_question_space">！？空白</label><br>
+<input type="checkbox" id="option_bracket_pair" value="1" checked><label for="option_bracket_pair">括弧内改行</label> / 
+<input type="checkbox" id="option_bracket_pair2" value="1" checked><label for="option_bracket_pair2">括弧対応</label> /
+<input type="checkbox" id="option_bracket_period" value="1" checked><label for="option_bracket_period">句読点括弧</label><br>
+<input type="checkbox" id="option_repeat_period" value="1" checked><label for="option_repeat_period">句読点連続</label> / 
+<input type="checkbox" id="option_santen" value="1" checked><label for="option_santen">三点リーダ</label> / 
+<input type="checkbox" id="option_dash" value="1" checked><label for="option_dash">ダッシュ</label><br>
+<input type="checkbox" id="option_line_end" value="1" checked><label for="option_line_end">行末文字確認</label> : 
+<input type="checkbox" id="option_line_end_imp" value="1"><label for="option_line_end_imp">警告表示</label><br>
+<input type="checkbox" id="option_full_alnum" value="1"><label for="option_full_alnum">全角英数確認</label> : 
+<input type="checkbox" id="option_full_alnum_imp" value="1"><label for="option_full_alnum_imp">警告表示</label><br>
+<input type="checkbox" id="option_half_alnum" value="1"><label for="option_half_alnum">半角英数確認</label> : 
+<input type="checkbox" id="option_half_alnum_imp" value="1"><label for="option_half_alnum_imp">警告表示</label><br>
+<input type="checkbox" id="option_kanji" value="1" checked><label for="option_kanji">表外漢字(常用人名以外)</label> : 
+<input type="checkbox" id="option_kanji_imp" value="1"><label for="option_kanji_imp">警告表示</label><br>
+<input type="checkbox" id="option_kanji_jinmei" value="1" checked><label for="option_kanji_jinmei">人名漢字</label> : 
+<input type="checkbox" id="option_kanji_jinmei_imp" value="1"><label for="option_kanji_jinmei_imp">警告表示</label><br>
+<label for="kanji_except">警告表示除外漢字リスト</label><input type="text" id="kanji_except" value="" size="20"><br>
+<input type="checkbox" id="option_linenum" value="1"><label for="option_linenum">行番号表示</label><br>
+<input type="checkbox" id="option_entity" value="1" checked><label for="option_entity">HTMLエンティティを展開(&amp;quot;など)</label><br>
+</div>
+</form>
+<div id="result"></div>
+<hr>
+2018-12-02 ver0.2<br>
+&copyright; えびえび/syuribox
+<br><br><br><br><br><br><br><br><br><br><br><br>
+</body>
+</html>
