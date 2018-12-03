@@ -49,11 +49,13 @@
 <input type="checkbox" id="option_santen" value="1" checked><label for="option_santen">三点リーダ</label> / 
 <input type="checkbox" id="option_dash" value="1" checked><label for="option_dash">ダッシュ</label><br>
 <input type="checkbox" id="option_line_end" value="1" checked><label for="option_line_end">行末文字確認</label> : 
-<input type="checkbox" id="option_line_end_imp" value="1"><label for="option_line_end_imp">警告表示</label><br>
+<input type="checkbox" id="option_line_end_imp" value="1"><label for="option_line_end_imp">警告表示</label> 
+<input type="checkbox" id="option_brank_line" value="1"><label for="option_brank_line">空白無視</label><br>
 <input type="checkbox" id="option_full_alnum" value="1"><label for="option_full_alnum">全角英数確認</label> : 
 <input type="checkbox" id="option_full_alnum_imp" value="1"><label for="option_full_alnum_imp">警告表示</label><br>
 <input type="checkbox" id="option_half_alnum" value="1"><label for="option_half_alnum">半角英数確認</label> : 
 <input type="checkbox" id="option_half_alnum_imp" value="1"><label for="option_half_alnum_imp">警告表示</label><br>
+<input type="checkbox" id="option_katakana" value="1"><label for="option_katakana">カタカナ</label><br>
 <input type="checkbox" id="option_kanji" value="1" checked><label for="option_kanji">表外漢字(常用人名以外)</label> : 
 <input type="checkbox" id="option_kanji_imp" value="1"><label for="option_kanji_imp">警告表示</label><br>
 <input type="checkbox" id="option_kanji_jinmei" value="1" checked><label for="option_kanji_jinmei">人名漢字</label> : 
@@ -61,6 +63,11 @@
 <label for="kanji_except">警告表示除外漢字リスト</label><input type="text" id="kanji_except" value="" size="20"><br>
 <input type="checkbox" id="option_linenum" value="1"><label for="option_linenum">行番号表示</label><br>
 <input type="checkbox" id="option_entity" value="1" checked><label for="option_entity">HTMLエンティティを展開(&amp;quot;など)</label><br>
+※実験的<br>
+<label for="custom_red">カスタム強調(<span class="rule_custom_red">赤</span>)</label><input type="text" id="custom_red" value="" size="20"> : 
+<input type="checkbox" id="custom_red_imp" value="1"><label for="custom_red_imp">警告表示</label><br>
+<label for="custom_gray">カスタム強調(<span class="rule_custom_gray">灰</span>)</label><input type="text" id="custom_gray" value="" size="20"> : 
+<input type="checkbox" id="custom_gray_imp" value="1"><label for="custom_gray_imp">警告表示</label><br>
 </div>
 </form>
 <div id="result"></div>

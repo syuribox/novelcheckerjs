@@ -104,6 +104,10 @@ function start_check(){
 	var option_kanji_jinmei_imp = get_id('option_kanji_jinmei_imp').checked;
 	var option_linenum = get_id('option_linenum').checked;
 	var option_entity = get_id('option_entity').checked;
+	var custom_red = get_id('custom_red').value;
+	var custom_gray = get_id('custom_gray').value;
+	var custom_red_imp = get_id('custom_red_imp').checked;
+	var custom_gray_imp = get_id('custom_gray_imp').checked;
 
 	var rule_no_check = '----';
 
@@ -114,7 +118,7 @@ function start_check(){
 	var book_line = parseInt(book.replace(/([0-9]+)x([0-9]+)/, "$2"));
 	var book_col = parseInt(book.replace(/([0-9]+)x([0-9]+)/, "$1"));
 	var kanji_except = get_id('kanji_except').value;
-	
+
 	var line_val = 0;
 	var col_val = 0;
 	var char_count = 0;
@@ -178,6 +182,76 @@ function start_check(){
 	}
 
 	text = html_escape(text);
+
+	var text_head = '';
+	var text_footer = '';
+	var text_replace_list = [];
+	var text_replace_list_img = [];
+	var text_type = 'normal';
+	if(text.substr(0,8) === '【ユーザ情報】\n'){
+		// narou backup format
+		var start_one = '\n------------------------- 第1部分開始 -------------------------\n';
+		var start_pos = text.indexOf(start_one);
+		if(-1 === start_pos){
+			// 短編
+			start_one = '\n【本文】\n';
+			start_pos = text.indexOf(start_one);
+		}
+		if(-1 !== start_pos){
+			text_type = 'backup';
+			text_head = text.substr(0, start_pos + start_one.length - 1);
+			text = text.substr(start_pos + start_one.length - 1);
+			var footer_str = '\n【免責事項】\n本テキストデータの利用';
+			var footer_pos = text.indexOf(footer_str);
+			if(-1 !== footer_pos){
+				text_footer = text.substr(footer_pos + 1);
+				text = text.substr(0, footer_pos + 1);
+			}
+
+			text = text.replace(/■/g, '■□');
+			text = text.replace(/^(------------------------- 第\d+部分開始 -------------------------|【(第\d+章|前書き|本文|後書き)】)$/mg, function(s){
+				text_replace_list.push(s);
+				return '　■。';
+			});
+			text = text.replace(/\n【サブタイトル】\n/g, '\n　■◆。');
+			text = text.replace(/^([ \t　]*)\&lt;i(\d+)\|(\d+)\&gt;([ \t　]*)$/mg, function(s){
+				text_replace_list_img.push(s);
+				return '　■●。';
+			});
+		}
+	}
+	if(text_type === 'normal' && -1 != text.indexOf('\n----------------\n')){
+		text_type = 'narou_dl';
+		text = text.replace(/■/g, '■□');
+		text = text.replace(/^([^\n]+)\n([^\n]+)\n/, function(s){
+			text_replace_list.push(s);
+			return '　■。\n';
+		});
+		text = text.replace(/^(----------------|(\*{44})|(\*{48}))$/mg, function(s){
+			text_replace_list.push(s);
+			return '　■。';
+		});
+		text = text.replace(/^([ \t　]*)\&amp;lt;i(\d+)\|(\d+)\&amp;gt;([ \t　]*)$/mg, function(s){
+			text_replace_list_img.push(s);
+			return '　■●。';
+		});
+	}
+
+	if(0 < custom_red.length){
+		try{
+			text = text.replace(new RegExp(custom_red, 'g'), '■㊀$&■㊁');
+		}catch(e){
+			alert('カスタム(赤)の正規表現が不正です。\n' + custom_red);
+		}
+	}
+	if(0 < custom_gray.length){
+		try{
+			text = text.replace(new RegExp(custom_gray, 'g'), '■㊂$&■㊃');
+		}catch(e){
+			alert('カスタム(灰)の正規表現が不正です。\n' + custom_gray);
+		}
+	}
+
 	var rule_half_alnum = 0;
 	if( option_half_alnum ){
 		text = text.replace(/&lt;/g, "&%;").replace(/&gt;/g, "&%%;").replace(/&amp;/g, "&%%%;");
@@ -236,6 +310,15 @@ function start_check(){
 	}else{
 		rule_question_space = rule_no_check;
 	}
+	var rule_katakana = 0;
+	if( option_katakana ){
+		text = text.replace(/[ァ-ヴ･-ﾟ]([ァ-ヴ゛゜ー]*)/g, function(s){
+			rule_katakana++;
+			return '<span class="rule_katakana">' + s + '</span>';
+		});
+	}else{
+		rule_katakana = rule_no_check;
+	}
 
 	var rule_santen = 0;
 	if(option_santen){
@@ -246,18 +329,14 @@ function start_check(){
 			}
 			return s;
 		});
-		text = text.replace(/([\(（《])?(・(・+))([\)）》])?/g, function(s,g1,g2,g3,g4){
-			if(g1 === undefined){
-				g1 = '';
-			}
-			if(g4 === undefined){
-				g4 = '';
-			}
-			var x = '(（《'.indexOf(g1);
-			var y = ')）》'.indexOf(g4);
-			if( x != -1 && x == y ){
-				// ルビ
-				return s;
+		text = text.replace(/([\(（《]?)(・(・+))([\)）》]?)/g, function(s,g1,g2,g3,g4){
+			if(g1 !== '' && g4 !== ''){
+				var x = '(（《'.indexOf(g1);
+				var y = ')）》'.indexOf(g4);
+				if( x != -1 && x == y ){
+					// ルビ
+					return s;
+				}
 			}
 			rule_santen++;
 			return g1 + '<span class="rule_santen">{三点リーダ}' + g2 + '</span>' + g4;
@@ -272,6 +351,7 @@ function start_check(){
 	var rule_line_end = 0;
 	var brackets = 0;
 	var prev = true;
+	var ignore_mode = false;
 	var brackets_line = 0;
 	var brackets_types_arr = [];
 	var normal_line = 0;
@@ -345,7 +425,7 @@ function start_check(){
 					rule_bracket_pair++;
 				}
 			}
-			if( prev == false && option_line_end){
+			if( prev == false && ignore_mode === false && option_line_end){
 				var s3 = '<span class="rule_line_end">＿</span>';
 				var s3imp = '<span class="rule_line_end_imp">{行末文字}</span>';
 				var s3_;
@@ -366,6 +446,25 @@ function start_check(){
 				normal_line++;
 			}
 			line_type = 0;
+			if(text_type !== 'normal'){
+				var sub_head = text.substr(i + 1, 3);
+				if(sub_head === '　■。'){
+					// reset
+					for(; 0 < brackets; brackets--){
+						var s1 = '<span class="rule_bracket_pair">｛括弧対応：未閉じ｝</span></span>';
+						text = text.substr(0, i) + s1 + text.substr(i);
+						i += s1.length;
+						rule_bracket_pair2++;
+					}
+					brackets = 0;
+					brackets_types_arr = [];
+				}
+				if(sub_head === '　■◆' || sub_head === '　■●'){
+					ignore_mode = true;
+				}else{
+					ignore_mode = false;
+				}
+			}
 		} else if( -1 != mozi.search(/[”〟―…─,\.。、，．？！\?\!☆♡♥]/) ){
 			prev = true;
 		} else {
@@ -376,7 +475,11 @@ function start_check(){
 					line_type = 2; // 通常行
 				}
 			}
-			prev = false;
+			if(option_brank_line && -1 != mozi.search(/[ \t　]/)){
+				prev = true;
+			}else{
+				prev = false;
+			}
 		}
 		if( mozi !== '\n' ){
 			if( 0 < brackets ){
@@ -415,15 +518,6 @@ function start_check(){
 	}
 	if(!option_line_end){
 		rule_line_end = rule_no_check;
-	}
-
-	if(option_linenum){
-		line_num = 1;
-		text = text.replace(/\n/g, function(){
-				line_num++;
-				return '\n<span class="linenum">' + fixnum(line_num) + ':</span> ';
-		});
-		text = '<span class="linenum">' + fixnum(1) + ': </span>' + text;
 	}
 
 	var rule_repeat_period = 0;
@@ -522,7 +616,89 @@ function start_check(){
 		rule_kanji_jinmei = rule_no_check;
 	}
 
-	text = text.replace(/\n/g, "<br>");
+	var custom_span = function (rx_, begin_, end_, imp_, css_){
+		var hit_level = false;
+		var warning_tag = false;
+		var imp_css = imp_ + css_;
+		text = text.replace(rx_, function(s){
+			if(s === begin_){
+				hit_level = true;
+				return imp_css;
+			}
+			if(s === end_){
+				hit_level = false;
+				return '</span>';
+			}
+			if(s.substr(0,6)  === '<span '){
+				if(s.substr(s.length - 1, 1) === '{'){ //'}'
+					warning_tag = true;
+					return s;
+				}
+				if(hit_level){
+					return '</span>' + s + css_;
+				}
+				return s;
+			}
+			if(warning_tag){
+				warning_tag = false;
+				return '</span>';
+			}
+			if(hit_level){
+				return '</span></span>' + css_;
+			}
+			return '</span>'
+		});
+	}
+	if(0 < custom_red.length){
+		custom_span(/■[㊀㊁]|<span ([^\n>]+)>({?)|<\/span>/g, '■㊀', '■㊁',
+			custom_red_imp ? '<span class="rule_highlight">{カスタム赤}</span>' : '',
+			'<span class="rule_custom_red">');
+	}
+	if(0 < custom_gray.length){
+		custom_span(/■[㊂㊃]|<span ([^\n>]+)>({?)|<\/span>/g, '■㊂', '■㊃',
+			custom_gray_imp ? '<span class="rule_highlight">{カスタム灰}</span>' : '',
+			'<span class="rule_custom_gray">');
+	}
+
+	if(text_type !== 'normal'){
+		var replace_count = 0;
+		text = text.replace(/　■●。/g, function(){
+			var x = text_replace_list_img[replace_count];
+			replace_count++;
+			return x;
+		});
+		if(text_type === 'backup'){
+			text = text.replace(/　■◆。/g, '【サブタイトル】\n');
+		}
+		replace_count = 0;
+		text = text.replace(/　■。/g, function(){
+			var x = text_replace_list[replace_count];
+			replace_count++;
+			return x;
+		});
+		text = text.replace(/■□/g, '■');
+	}
+	if(text_head !== ''){
+		text = text_head + text;
+	}
+	if(text_footer !== ''){
+		text += text_footer;
+	}
+
+	if(option_entity){
+		text = text.replace(/&amp;/g, '&');
+	}
+
+	if(option_linenum){
+		line_num = 1;
+		text = text.replace(/\n/g, function(){
+				line_num++;
+				return '\n<span class="linenum">' + fixnum(line_num) + ':</span> ';
+		});
+		text = '<span class="linenum">' + fixnum(1) + ': </span>' + text;
+	}
+
+	text = text.replace(/\n/g, "<br>\n");
 
 	var rules = '<table class="rule_result">';
 	rules += '<tr class="rule_tr"><td class="rule_type">　　項目</td><td class="rule_type">　　値</td></tr>';
@@ -564,10 +740,6 @@ function start_check(){
 	rules += '<tr class="rule_tr"><td class="rule_type">表外漢字</td><td class="rule_value">　' + rule_kanji + '　※<span class="rule_kanji">背景色</span></td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">人名漢字</td><td class="rule_value">　' + rule_kanji_jinmei + '　※<span class="rule_kanji_jinmei">背景色</span></td></tr>';
 	rules += '</table><br>'
-
-	if(option_entity){
-		text = text.replace(/&amp;/g, '&');
-	}
 
 	get_id("result").innerHTML = rules + '<div class="resultext">' + text + '</div>';
 }
