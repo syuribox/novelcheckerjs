@@ -8,6 +8,5 @@ novelcheck.css
 Github Pages で公開しているので、web上でそのままご利用の場合は下記のURLからアクセスしてください。
 https://syuribox.github.io/novelcheckerjs/
 
-MIT Licenseにて公開しています。無償で利用でき、再配布、改造、改造しての再配布などが可能です。
 
-2016-2017 ebiebi360
+(c)2018 えびえび/syuribox
