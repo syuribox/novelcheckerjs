@@ -1,5 +1,5 @@
 ﻿ノベルチェッカーです。
-novel.html
+index.html
 novelcheck.js
 novelcheck.css
 の3ファイルをローカルにコピーして、Firefox/Chromeなどで開けばオフラインでも使用可能です。
