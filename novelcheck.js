@@ -98,6 +98,7 @@ function start_check(){
 	var option_full_alnum_imp = get_id('option_full_alnum_imp').checked;
 	var option_half_alnum = get_id('option_half_alnum').checked;
 	var option_half_alnum_imp = get_id('option_half_alnum_imp').checked;
+	var option_katakana = get_id('option_katakana').checked;
 	var option_kanji = get_id('option_kanji').checked;
 	var option_kanji_imp = get_id('option_kanji_imp').checked;
 	var option_kanji_jinmei = get_id('option_kanji_jinmei').checked;

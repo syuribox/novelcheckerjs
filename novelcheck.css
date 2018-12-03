@@ -5,7 +5,9 @@
 body {color:#000; background-color:#fff}
 h1 {background-color:#ddf}
 
-div.result {font-family:"ＭＳ ゴシック", monospace;}
+div.result {font-family:"ＭＳ ゴシック";}
+div.resultext {border:1px solid #000; font-family:"ＭＳ ゴシック"; word-wrap: break-word;}
+
 table.rule_result {border-collapse:collapse; border:2px solid #000}
 tr.rule_tr {border:1px solid #000}
 td.rule_type {border:1px solid #000; background-color:#eef0ff}
@@ -41,8 +43,6 @@ span.rule_bracket_inner3 {color:#00f}
 span.rule_bracket_inner4 {color:#a0a}
 
 span.linenum {background-color:#fff; color:#111}
-
-div.resultext {border:1px solid #000; font-family:"ＭＳ ゴシック", monospace; word-wrap:break-word;}
 
 @media screen and (max-width:600px){
 	#maintext {width:95%}
