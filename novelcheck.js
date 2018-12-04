@@ -362,7 +362,7 @@ function start_check(){
 	}
 	var rule_question_space = 0;
 	if(option_question_space){
-		text = text.replace(/([？！\?\!☆♡♥♪]+)([^？！\?\!])/g, function(s, s1, s2){
+		text = text.replace(/([？！\?\!⁈⁉☆♡♥♪]+)([^？！\?\!])/g, function(s, s1, s2){
 			if( -1 == s2.search(/[　」』】≫〉》〕）］｝\)\n]/) ){
 				rule_question_space++;
 				return '<span class="rule_question_space">{！？空白}' + s1 + '</span>' + s2;
@@ -431,14 +431,26 @@ function start_check(){
 	var preg_tag_end = 0;
 	var brackets_char = 0;
 	var normal_char = 0;
+	var prev_eol = false;
 	for(var i = 0; i < text.length; i++){
 		var mozi = text.charAt(i);
 		var brackets_types_1 = "「『【≪〈《〔［｛（([".indexOf(mozi);
 		var brackets_types_2 = "」』】≫〉》〕］｝）)]".indexOf(mozi);
+		if(prev_eol){
+			prev_eol = false;
+			if(0 < brackets){
+				var s1 = '<span class="rule_bracket_inner' + ((brackets + 3) % 4 + 1) + '">';
+				text = text.substr(0, i) + s1 + text.substr(i);
+				i += s1.length;
+			}
+		}
 		if( -1 !== brackets_types_1 ){
 			brackets_types_arr.push(brackets_types_1);
 			brackets++;
 			var s1 = '<span class="rule_bracket_inner' + ((brackets + 3) % 4 + 1) + '">';
+			if(1 < brackets){
+				s1 = '</span>' + s1;
+			}
 			text = text.substr(0, i) + s1 + text.substr(i);
 			i += s1.length;
 			prev = false;
@@ -466,6 +478,9 @@ function start_check(){
 			}
 			if( 0 <= brackets ){
 				var s2 = '</span>';
+				if(1 <= brackets){
+					s2 += '<span class="rule_bracket_inner' + ((brackets + 3) % 4 + 1) + '">';
+				}
 				text = text.substr(0, i + 1) + s2 + text.substr(i + 1);
 				i += s2.length;
 			}
@@ -489,6 +504,7 @@ function start_check(){
 			// 心境の場合は行末可。ルビは考慮外
 			prev = true;
 		} else if( mozi === '\n' ){
+			prev_eol = true;
 			if( option_bracket_pair ){
 				if( 0 < brackets && brackets <= 5 ){
 					var s1 = '<span class="rule_bracket_pair">{括弧内改行}</span>';
@@ -537,7 +553,12 @@ function start_check(){
 					ignore_mode = false;
 				}
 			}
-		} else if( -1 !== mozi.search(/[”〟―…─,\.。、，．？！\?\!☆♡♥]/) ){
+			if(0 < brackets){
+				var s1 = '</span>';
+				text = text.substr(0, i) + s1 + text.substr(i);
+				i += s1.length;
+			}
+		} else if( -1 !== mozi.search(/[”〟―…─,\.。、，．？！\?\!⁈⁉☆♡♥♪]/) ){
 			prev = true;
 		} else {
 			if( line_type === 0 ){
@@ -957,6 +978,15 @@ function start_check_katakana(){
 	output += "\n■漢字[力口ニ]\n";
 	output += check_katakana(/[力口二][ァ-ヺ][ァ-ヺー゛゜゙゚]*/g);
 	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[力口二]/g);
+	var text = output.replace(/\n/g, "<br>")
+	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
+}
+
+function start_check_alpha(){
+	var output = '';
+	output += '■英語一覧\n';
+	output += check_katakana(/[a-zA-Z\-_]+/g);
+	output += check_katakana(/[ａ-ｚＡ-Ｚ＿－゙゚]+/g);
 	var text = output.replace(/\n/g, "<br>")
 	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
 }
