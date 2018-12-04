@@ -33,10 +33,12 @@ function area_sample(){
 	sample += '「セリフの句読点括弧。」\n';
 	sample += '　句読点連続、のチェック、、句点のチェック。。\n';
 	sample += '　三点リーダ…または・・・正しいのは2の倍数個……\n';
-	sample += '　ダッシューーまたは―正しいのは2の倍数個――\n';
+	sample += '　ダッシューーまたは―正しいのは2の倍数個またの名をダーシ――\n';
 	sample += '　行末が句読点括弧以外の場所は閉じ括弧ミスか。忘れの可能性があります\n';
 	sample += '　ASCIIの半角123、ABC、全角１２３、ＡＢＣ、ａｂｃ。\n';
 	sample += '　巫女　味噌　魑魅魍魎　囁く　聳える\n';
+	sample += '　塡剝頰𠮟　　😀👾🍄\n';
+	sample += '　二クキュウ　インドへ　へクタール　チ－ト\n';
 	get_id('maintext').value = sample;
 }
 
@@ -51,6 +53,14 @@ function is_kanji(c){
 		return true;
 	}
 	return false;
+}
+
+function surrogate_to_codepoint(s){
+	var c0 = s.charCodeAt(0);
+	var c1 = s.charCodeAt(1);
+	c0 &= 0x3FF;
+	c1 &= 0x3FF;
+	return ((c0 << 10) | c1) + 0x10000;
 }
 
 function file_opens(e){
@@ -99,11 +109,17 @@ function start_check(){
 	var option_half_alnum = get_id('option_half_alnum').checked;
 	var option_half_alnum_imp = get_id('option_half_alnum_imp').checked;
 	var option_katakana = get_id('option_katakana').checked;
+	var option_katakana_imp = get_id('option_katakana_imp').checked;
 	var option_kanji = get_id('option_kanji').checked;
 	var option_kanji_imp = get_id('option_kanji_imp').checked;
 	var option_kanji_jinmei = get_id('option_kanji_jinmei').checked;
 	var option_kanji_jinmei_imp = get_id('option_kanji_jinmei_imp').checked;
+	var option_kanji_ext = get_id('option_kanji_ext').checked;
+	var option_kanji_ext_imp = get_id('option_kanji_ext_imp').checked;
+	var option_kanji_emoji_imp = get_id('option_kanji_emoji_imp').checked;
+	var option_kanji_etc_imp = get_id('option_kanji_etc_imp').checked;
 	var option_linenum = get_id('option_linenum').checked;
+	var option_view_warning_only = get_id('option_view_warning_only').checked;
 	var option_entity = get_id('option_entity').checked;
 	var custom_red = get_id('custom_red').value;
 	var custom_gray = get_id('custom_gray').value;
@@ -128,7 +144,7 @@ function start_check(){
 	var end_line = false;
 	for(var i = 0; i < text.length; i++){
 		var c1 = text.charAt(i);
-		if( c1 == '\n' ){
+		if( c1 === '\n' ){
 			col_val = 0;
 			line_val++;
 			line_count++;
@@ -136,11 +152,11 @@ function start_check(){
 			end_line = true;
 		}else{
 			end_line = false;
-			if( c1 == ' ' ){
+			if( c1 === ' ' ){
 				char_count_all++;
-			}else if( c1 == '　' ){
+			}else if( c1 === '　' ){
 				char_count_all++;
-			}else if( c1 == '\t' ){
+			}else if( c1 === '\t' ){
 				char_count_all++;
 			}else{
 				char_count++;
@@ -168,17 +184,52 @@ function start_check(){
 	var char_kanji = 0;
 	for(var i = 0; i < text.length; i++){
 		var c2 = text.charAt(i);
-		if( -1 != c2.search(/[ぁ-\u309e]/) ){
+		if( -1 !== c2.search(/[ぁ-\u309e]/) ){
 			char_hira++;
-		}else if( -1 != c2.search(/[ァ-\u30ff]/) ){
+		}else if( -1 !== c2.search(/[ァ-\u30ff]/) ){
 			char_kata++;
-		}else if( -1 != c2.search(/[\u3000-\u303f]/) ){
-			char_kigou++; // 「」などの記号
-		}else if( -1 != c2.search(/[\u0000-\u007f]/) ){
-			char_ascii++;
-		}else{
-			// その他はとりあえず漢字
+		}else if( is_kanji(text.charCodeAt(i)) ){
 			char_kanji++;
+		}else if( -1 !== c2.search(/[\u0000-\u007f]/) ){
+			if(c2 !== '\n'){
+				char_ascii++;
+			}
+		}else{
+			var cc = text.charCodeAt(i);
+			var cc1 = text.charCodeAt(i + 1);
+			var mozi = '';
+			if(0xD800 <= cc && cc <= 0xDBFF){
+				if(0xDC00 <= cc1 && cc1 <= 0xDFFF){
+					mozi = text.substr(i, 2); // サロゲート正常
+				}else{
+					// 不正シーケンス
+					mozi = text.substr(i, 1);
+				}
+			}else if(0xDC00 <= cc && cc <= 0xDFFF){
+				// 不正シーケンス
+				mozi = text.substr(i, 1);
+			}
+			if( 0 < mozi.length){
+				if(2 === mozi.length){
+					i++;
+					var x = surrogate_to_codepoint(mozi);
+					if(0x1F300 <= x && x <= 0x1FFFF){
+						//絵文字->記号
+					}else if(0x20000 <= x && x <= 0x3FFFF){
+						//サロゲート漢字
+						char_kanji++;
+						continue;
+					}
+					//サロゲートその他
+					char_kigou++;
+					continue;
+				}
+				//サロゲート断片
+				char_kigou++;
+				continue;
+			}
+			// その他はとりあえず記号
+			char_kigou++;
 		}
 	}
 
@@ -238,19 +289,29 @@ function start_check(){
 		});
 	}
 
+	var rule_custom_red = 0;
+	var rule_custom_gray = 0;
 	if(0 < custom_red.length){
 		try{
-			text = text.replace(new RegExp(custom_red, 'g'), '■㊀$&■㊁');
+			text = text.replace(new RegExp(custom_red, 'g'), function (s){
+					rule_custom_red++;
+					return '■㊀' + s +'■㊁';});
 		}catch(e){
 			alert('カスタム(赤)の正規表現が不正です。\n' + custom_red);
 		}
+	}else{
+		rule_custom_red = rule_no_check;
 	}
 	if(0 < custom_gray.length){
 		try{
-			text = text.replace(new RegExp(custom_gray, 'g'), '■㊂$&■㊃');
+			text = text.replace(new RegExp(custom_gray, 'g'), function (s){
+					rule_custom_red++;
+					return '■㊂' + s +'■㊃';});
 		}catch(e){
 			alert('カスタム(灰)の正規表現が不正です。\n' + custom_gray);
 		}
+	}else{
+		rule_custom_gray = rule_no_check;
 	}
 
 	var rule_half_alnum = 0;
@@ -313,10 +374,17 @@ function start_check(){
 	}
 	var rule_katakana = 0;
 	if( option_katakana ){
-		text = text.replace(/[ァ-ヴ･-ﾟ]([ァ-ヴ゛゜゙゚ー]*)/g, function(s){
-			rule_katakana++;
-			return '<span class="rule_katakana">' + s + '</span>';
-		});
+		if(option_katakana_imp){
+			text = text.replace(/[ァ-ヴ･-ﾟ]([ァ-ヴ゛゜゙゚ー]*)/g, function(s){
+				rule_katakana++;
+				return '<span class="rule_highlight">{カタカナ}</span><span class="rule_katakana">' + s + '</span>';
+			});
+		}else{
+			text = text.replace(/[ァ-ヴ･-ﾟ]([ァ-ヴ゛゜゙゚ー]*)/g, function(s){
+				rule_katakana++;
+				return '<span class="rule_katakana">' + s + '</span>';
+			});
+		}
 	}else{
 		rule_katakana = rule_no_check;
 	}
@@ -324,7 +392,7 @@ function start_check(){
 	var rule_santen = 0;
 	if(option_santen){
 		text = text.replace(/…+/g, function(s){
-			if( s.length % 2 != 0 ){
+			if( s.length % 2 !== 0 ){
 				rule_santen++;
 				return '<span class="rule_santen">{三点リーダ}' + s + '</span>';
 			}
@@ -334,7 +402,7 @@ function start_check(){
 			if(g1 !== '' && g4 !== ''){
 				var x = '(（《'.indexOf(g1);
 				var y = ')）》'.indexOf(g4);
-				if( x != -1 && x == y ){
+				if( x !== -1 && x === y ){
 					// ルビ
 					return s;
 				}
@@ -358,35 +426,38 @@ function start_check(){
 	var normal_line = 0;
 	var line_type = 0;
 	var line_num = 1;
+	var in_tag = false;
+	var in_mark = false;
+	var preg_tag_end = 0;
 	var brackets_char = 0;
 	var normal_char = 0;
 	for(var i = 0; i < text.length; i++){
 		var mozi = text.charAt(i);
 		var brackets_types_1 = "「『【≪〈《〔［｛（([".indexOf(mozi);
 		var brackets_types_2 = "」』】≫〉》〕］｝）)]".indexOf(mozi);
-		if( -1 != brackets_types_1 ){
+		if( -1 !== brackets_types_1 ){
 			brackets_types_arr.push(brackets_types_1);
 			brackets++;
 			var s1 = '<span class="rule_bracket_inner' + ((brackets + 3) % 4 + 1) + '">';
 			text = text.substr(0, i) + s1 + text.substr(i);
 			i += s1.length;
 			prev = false;
-			if( line_type == 0 ){
+			if( line_type === 0 ){
 				line_type = 1; // 台詞行
 			}
-		} else if( -1 != brackets_types_2 ){
+		} else if( -1 !== brackets_types_2 ){
 			brackets--;
 			if( 0 <= brackets ){
 				var postion = brackets_types_arr.length - 1;
 				for(; 0 <= postion; postion--){
-					if( brackets_types_arr[postion] == brackets_types_2 ){
+					if( brackets_types_arr[postion] === brackets_types_2 ){
 						brackets_types_arr.splice(postion, 1);
 						break;
 					}
 				}
 				if( postion < 0 ){
 					if(option_bracket_pair2){
-						var s1 = '<span class="rule_bracket_pair">｛括弧対応：種別｝</span>';
+						var s1 = '<span class="rule_bracket_pair">{括弧対応：種別}</span>';
 						text = text.substr(0, i) + s1 + text.substr(i);
 						i += s1.length;
 						rule_bracket_pair2++;
@@ -402,19 +473,19 @@ function start_check(){
 				brackets_types_arr = [];
 				brackets = 0;
 				if(option_bracket_pair2){
-					var s1 = '<span class="rule_bracket_pair">｛括弧対応：閉じ｝</span>';
+					var s1 = '<span class="rule_bracket_pair">{括弧対応：閉じ}</span>';
 					text = text.substr(0, i) + s1 + text.substr(i);
 					i += s1.length;
 					rule_bracket_pair2++;
 				}
 			}
 			// 閉じ括弧が後で普通の文字換算されてしまうので、ここで調整
-			if( 0 == brackets ){
+			if( 0 === brackets ){
 				brackets_char++;
 				normal_char--;
 			}
 			prev = true;
-		} else if( -1 != mozi.search(/[）\)]/) ){
+		} else if( -1 !== mozi.search(/[）\)]/) ){
 			// 心境の場合は行末可。ルビは考慮外
 			prev = true;
 		} else if( mozi === '\n' ){
@@ -426,7 +497,7 @@ function start_check(){
 					rule_bracket_pair++;
 				}
 			}
-			if( prev == false && ignore_mode === false && option_line_end){
+			if( prev === false && ignore_mode === false && option_line_end){
 				var s3 = '<span class="rule_line_end">＿</span>';
 				var s3imp = '<span class="rule_line_end_imp">{行末文字}</span>';
 				var s3_;
@@ -452,7 +523,7 @@ function start_check(){
 				if(sub_head === '　■。'){
 					// reset
 					for(; 0 < brackets; brackets--){
-						var s1 = '<span class="rule_bracket_pair">｛括弧対応：未閉じ｝</span></span>';
+						var s1 = '<span class="rule_bracket_pair">{括弧対応：未閉じ}</span></span>';
 						text = text.substr(0, i) + s1 + text.substr(i);
 						i += s1.length;
 						rule_bracket_pair2++;
@@ -466,27 +537,49 @@ function start_check(){
 					ignore_mode = false;
 				}
 			}
-		} else if( -1 != mozi.search(/[”〟―…─,\.。、，．？！\?\!☆♡♥]/) ){
+		} else if( -1 !== mozi.search(/[”〟―…─,\.。、，．？！\?\!☆♡♥]/) ){
 			prev = true;
 		} else {
-			if( line_type == 0 ){
+			if( line_type === 0 ){
 				if( 0 < brackets ){
 					line_type = 1; // 台詞中の改行の次の行
 				}else{
 					line_type = 2; // 通常行
 				}
 			}
-			if(option_brank_line && -1 != mozi.search(/[ \t　]/)){
+			if(option_brank_line && -1 !== mozi.search(/[ \t　]/)){
 				prev = true;
 			}else{
 				prev = false;
 			}
 		}
 		if( mozi !== '\n' ){
-			if( 0 < brackets ){
-				brackets_char++;
+			var in_mark2 = in_mark;
+			var in_tag2 = in_tag;
+			if( mozi === '{' && preg_tag_end === 2){
+				in_mark2 = in_mark = true;
+			}else if( mozi === '}' ){
+				in_mark = false;
+			}else if( mozi === '<' ){
+				if( 'span ' === text.substr(i + 1, 5)){
+					preg_tag_end = 1;
+				}
+				in_tag2 = in_tag = true;
+			}else if( mozi === '>' ){
+				in_tag = false;
+				preg_tag_end = 2;
 			}else{
-				normal_char++;
+				if(preg_tag_end === 2){
+					preg_tag_end = 0;
+				}
+			}
+			if(in_mark2 || in_tag2){
+			}else{
+				if( 0 < brackets ){
+					brackets_char++;
+				}else{
+					normal_char++;
+				}
 			}
 		}
 	}
@@ -533,7 +626,7 @@ function start_check(){
 	var rule_dash = 0;
 	if(option_dash){
 		text = text.replace(/—/g,'―').replace(/―+/g, function(s){
-			if( s.length % 2 != 0 ){
+			if( s.length % 2 !== 0 ){
 				rule_dash++;
 				return '<span class="rule_dash">{ダッシュ}' + s + '</span>';
 			}else{
@@ -566,29 +659,92 @@ function start_check(){
 
 	var rule_kanji = 0;
 	var rule_kanji_jinmei = 0;
-	if(option_kanji || option_kanji_jinmei){
+	var rule_kanji_surrogate = 0;
+	if(option_kanji || option_kanji_jinmei || option_kanji_ext || option_kanji_emoji_imp || option_kanji_etc_imp){
 		var len = text.length;
 		var kanji = ret_kanji_list();
 		var kanji_jyoyo = kanji.jyoyo;
 		var kanji_jinmei = kanji.jinmei;
 		for(var i = 0; i < len; i++){
-			if(!is_kanji(text.charCodeAt(i))){
-				continue;// 漢字以外
+			var cc = text.charCodeAt(i);
+			var cc1 = text.charCodeAt(i + 1);
+			var mozi = '';
+			if(0xD800 <= cc && cc <= 0xDBFF){
+				if(0xDC00 <= cc1 && cc1 <= 0xDFFF){
+					mozi = text.substr(i, 2); // サロゲート正常
+				}else{
+					// 不正シーケンス
+					mozi = text.substr(i, 1);
+				}
+			}else if(0xDC00 <= cc && cc <= 0xDFFF){
+				// 不正シーケンス
+				mozi = text.substr(i, 1);
 			}
-			if(-1 != kanji_jyoyo.indexOf(text.charAt(i))){
+			if( 0 < mozi.length){
+				var name = 'サロゲートその他';
+				var warning = false;
+				if(2 === mozi.length){
+					var x = surrogate_to_codepoint(mozi);
+					if(0x1F300 <= x && x <= 0x1FFFF){
+						if(option_kanji_emoji_imp){
+							name = 'サロゲート絵文字';
+							warning = true;
+						}else{
+							// 警告から除く
+							i += 1;
+							continue;
+						}
+					}else if(0x20000 <= x && x <= 0x3FFFF){
+						if(option_kanji_ext){
+							if(option_kanji_ext_imp){
+								name = 'サロゲート漢字';
+								warning = true;
+							}
+						}else{
+							i += 1;
+							continue;
+						}
+					}else if(option_kanji_etc_imp){
+						warning = true;
+					}else{
+						i += 1;
+						continue;
+					}
+				}else{
+					name = 'サロゲート断片';
+					warning = true;
+				}
+				var s1 ='';
+				if(warning){
+					s1 = '<span class="rule_highlight">{' + name + '}</span>';
+				}
+				s1 += '<span class="rule_kanji">';
+				var s2 = '</span>';
+				text = text.substr(0, i) + s1 + mozi + s2 + text.substr(i + mozi.length);
+				var n = s1.length + s2.length + mozi.length - 1;
+				len += n;
+				i += n;
+				rule_kanji_surrogate++;
 				continue;
 			}
-			if(-1 != kanji_except.indexOf(text.charAt(i))){
+			if(!is_kanji(cc)){
+				continue;// 漢字以外
+			}
+			var c0 = text.charAt(i);
+			if(-1 != kanji_jyoyo.indexOf(c0)){
+				continue;
+			}
+			if(-1 != kanji_except.indexOf(c0)){
 				continue; // 除外
 			}
-			if(-1 != kanji_jinmei.indexOf(text.charAt(i))){
+			if(-1 != kanji_jinmei.indexOf(c0)){
 				if(option_kanji_jinmei){
 					var s1 = '<span class="rule_kanji_jinmei">';
 					if(option_kanji_imp){
 						s1 = '<span class="rule_highlight">{人名漢字}</span>' + s1;
 					}
 					var s2 = '</span>';
-					text = text.substr(0, i) + s1 + text.charAt(i) + s2 + text.substr(i + 1);
+					text = text.substr(0, i) + s1 + c0 + s2 + text.substr(i + 1);
 					var n = s1.length + s2.length;
 					len += n;
 					i += n;
@@ -601,7 +757,7 @@ function start_check(){
 						s1 = '<span class="rule_highlight">{表外漢字}</span>' + s1;
 					}
 					var s2 = '</span>';
-					text = text.substr(0, i) + s1 + text.charAt(i) + s2 + text.substr(i + 1);
+					text = text.substr(0, i) + s1 + c0 + s2 + text.substr(i + 1);
 					var n = s1.length + s2.length;
 					len += n;
 					i += n;
@@ -699,6 +855,16 @@ function start_check(){
 		text = '<span class="linenum">' + fixnum(1) + ': </span>' + text;
 	}
 
+	if(option_view_warning_only){
+		text = text.replace(/^.*$/mg, function(s){
+				if( -1 != s.search(/<span class="rule_[a-z0-9_]+">{[^\n{}]+}/)){
+					return s;
+				}
+				return '';
+		});
+		text = text.replace(/\n+/g, "\n");
+	}
+
 	text = text.replace(/\n/g, "<br>\n");
 
 	var rules = '<table class="rule_result">';
@@ -707,11 +873,11 @@ function start_check(){
 	rules += '<tr class="rule_tr"><td class="rule_type">文字数(空白改行除く)</td><td class="rule_value">' + char_count + '文字</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">文字数(空白改行含む)</td><td class="rule_value">' + char_count_all + '文字</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">行数</td><td class="rule_value">' + line_count + '行</td></tr>';
-	rules += '<tr class="rule_tr"><td class="rule_type">台詞：地の文　台詞率</td><td class="rule_value">' + brackets_line + '：' + normal_line + '行　' + brackets_line_per + '%';
-		rules += ' ／ ' + brackets_char + '：' + normal_char + '文字　' + brackets_char_per + '%</td></tr>';
-	rules += '<tr class="rule_tr"><td class="rule_type">かな：カナ：漢字：記号：ASCII</td><td class="rule_value">' + char_hira + '：' + char_kata  + '：' + char_kanji + '：' + char_kigou + '：' + char_ascii + '文字</td></tr>'
+	rules += '<tr class="rule_tr"><td class="rule_type">台詞：地の文　台詞率</td><td class="rule_value">' + brackets_line + '：' + normal_line + '行 ' + brackets_line_per + '%';
+		rules += ' ／ ' + brackets_char + '：' + normal_char + '文字 ' + brackets_char_per + '%</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">かな: カナ: 漢字: 他: ASCII</td><td class="rule_value">' + char_hira + ': ' + char_kata  + ': ' + char_kanji + ': ' + char_kigou + ': ' + char_ascii + '文字</td></tr>'
 	rules += '<tr class="rule_tr"><td class="rule_type">文字種%</td><td class="rule_value">ひら' +
-		char_hira_per + '：カタ' + char_kata_per  + '：漢字' + char_kanji_per + '：記号' + char_kigou_per + '：A' + char_ascii_per + '%</td></tr>'
+		char_hira_per + ': カタ' + char_kata_per  + ': 漢字' + char_kanji_per + ': 他' + char_kigou_per + ': A' + char_ascii_per + '%</td></tr>'
 
 	rules += '<tr class="rule_tr"><td class="rule_type">　　項目</td><td class="rule_type">　　検出数</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">行頭空白</td><td class="rule_value">　' + rule_linetop + '</td></tr>';
@@ -738,8 +904,14 @@ function start_check(){
 		rules += '　※<span class="rule_half_alnum">背景色</span>';
 	}
 	rules += '</td></tr>';
-	rules += '<tr class="rule_tr"><td class="rule_type">表外漢字</td><td class="rule_value">　' + rule_kanji + '　※<span class="rule_kanji">背景色</span></td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">表外漢字(常用人名以外)<br>　+サロゲート</td><td class="rule_value">　' + rule_kanji + '　※<span class="rule_kanji">背景色</span><br>　' + rule_kanji_surrogate + '</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">人名漢字</td><td class="rule_value">　' + rule_kanji_jinmei + '　※<span class="rule_kanji_jinmei">背景色</span></td></tr>';
+	if(0 < custom_red.length){
+		rules += '<tr class="rule_tr"><td class="rule_type">カスタム赤</td><td class="rule_value">　' + rule_custom_red + '　※<span class="rule_custom_red">背景色</span></td></tr>';
+	}
+	if(0 < custom_gray.length){
+		rules += '<tr class="rule_tr"><td class="rule_type">カスタム灰</td><td class="rule_value">　' + rule_custom_gray + '　※<span class="rule_custom_gray">背景色</span></td></tr>';
+	}
 	rules += '</table><br>'
 
 	get_id("result").innerHTML = rules + '<div class="resultext">' + text + '</div>';
