@@ -32,6 +32,7 @@ span.rule_half_alnum {background-color:#bfb}
 span.rule_katakana {background-color:#dff}
 span.rule_kanji {background-color:#fcf}
 span.rule_kanji_jinmei {background-color:#fcb}
+span.rule_kanji_daiiti {background-color:#fdd}
 
 span.rule_custom_red {background-color:#f99}
 span.rule_custom_gray {background-color:#ccc}

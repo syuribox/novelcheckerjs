@@ -29,16 +29,23 @@ function area_sample(){
 	sample += '　地の文。\n';
 	sample += '行頭空白。\n';
 	sample += '　「空白括弧」\n';
-	sample += '　疑問符の後の空白？　です？例外：「括弧の直前？」連続！？　疑問符！！！です\n';
+	sample += '　疑問符の後の空白？　です？例外：「括弧の直前？」連続！？　疑問符！！！\n';
+	sample += '句読後の空白、　句点後の空白。　行末でも有効。　\n';
 	sample += '「セリフの句読点括弧。」\n';
+	sample += '『あいうえお。\n';
+	sample += '　かきくけこ。(さしすせそ。「「「括弧のネスト」」」)』\n';
+	sample += '【括弧の対応がおかしいのも検出します」\n';
 	sample += '　句読点連続、のチェック、、句点のチェック。。\n';
 	sample += '　三点リーダ…または・・・正しいのは2の倍数個……\n';
 	sample += '　ダッシューーまたは―正しいのは2の倍数個またの名をダーシ――\n';
 	sample += '　行末が句読点括弧以外の場所は閉じ括弧ミスか。忘れの可能性があります\n';
 	sample += '　ASCIIの半角123、ABC、全角１２３、ＡＢＣ、ａｂｃ。\n';
-	sample += '　巫女　味噌　魑魅魍魎　囁く　聳える\n';
-	sample += '　塡剝頰𠮟　　😀👾🍄\n';
-	sample += '　二クキュウ　インドへ　へクタール　チ－ト\n';
+	sample += '　巫女　味噌　魑魅魍魎　囁く　聳える　😀👾🍄\n';
+	sample += '　二クキュウ　インドへ　へクタール　チ－ト　ニ個　二ーチェ\n';
+	sample += '■補足\n';
+	sample += '　ダッシュには「あほーー」のような伸ばし棒が2つ以上の場合も警告表示されてしまいますが、問題ない場合もあります。ダッシュと伸ばし棒の書き間違いなら修正してください。\n'
+	sample += '　空白括弧には行頭に行に埋め込まれた括弧文があるとそれも警告されてしまいます。\n'
+	sample += '　常用漢字のリストには第三水準の「塡剝頰𠮟」を含めていません。「塡剝頰」は表外漢字の警告対象です。「𠮟」はサロゲート漢字として検出されます。\n';
 	get_id('maintext').value = sample;
 }
 
@@ -114,6 +121,8 @@ function start_check(){
 	var option_kanji_imp = get_id('option_kanji_imp').checked;
 	var option_kanji_jinmei = get_id('option_kanji_jinmei').checked;
 	var option_kanji_jinmei_imp = get_id('option_kanji_jinmei_imp').checked;
+	var option_kanji_daiiti = get_id('option_kanji_daiiti').checked;
+	var option_kanji_daiiti_imp = get_id('option_kanji_daiiti_imp').checked;
 	var option_kanji_ext = get_id('option_kanji_ext').checked;
 	var option_kanji_ext_imp = get_id('option_kanji_ext_imp').checked;
 	var option_kanji_emoji_imp = get_id('option_kanji_emoji_imp').checked;
@@ -259,33 +268,32 @@ function start_check(){
 				text_footer = text.substr(footer_pos + 1);
 				text = text.substr(0, footer_pos + 1);
 			}
-
-			text = text.replace(/■/g, '■□');
+			text = text.replace(/ⓐ/g, 'ⓐⓩ');
 			text = text.replace(/^(------------------------- 第\d+部分開始 -------------------------|【(第\d+章|前書き|本文|後書き)】)$/mg, function(s){
 				text_replace_list.push(s);
-				return '　■。';
+				return '　ⓐⓓ。';
 			});
-			text = text.replace(/\n【サブタイトル】\n/g, '\n　■◆。');
+			text = text.replace(/\n【サブタイトル】\n/g, '\n　ⓐⓑ');
 			text = text.replace(/^([ \t　]*)\&lt;i(\d+)\|(\d+)\&gt;([ \t　]*)$/mg, function(s){
 				text_replace_list_img.push(s);
-				return '　■●。';
+				return '　ⓐⓒ';
 			});
 		}
 	}
 	if(text_type === 'normal' && -1 != text.indexOf('\n----------------\n')){
 		text_type = 'narou_dl';
-		text = text.replace(/■/g, '■□');
+		text = text.replace(/ⓐ/g, 'ⓐⓩ');
 		text = text.replace(/^([^\n]+)\n([^\n]+)\n/, function(s){
 			text_replace_list.push(s);
-			return '　■。\n';
+			return '　ⓐⓓ。';
 		});
 		text = text.replace(/^(----------------|(\*{44})|(\*{48}))$/mg, function(s){
 			text_replace_list.push(s);
-			return '　■。';
+			return '　ⓐⓓ。';
 		});
 		text = text.replace(/^([ \t　]*)\&amp;lt;i(\d+)\|(\d+)\&amp;gt;([ \t　]*)$/mg, function(s){
 			text_replace_list_img.push(s);
-			return '　■●。';
+			return '　ⓐⓒ';
 		});
 	}
 
@@ -295,7 +303,7 @@ function start_check(){
 		try{
 			text = text.replace(new RegExp(custom_red, 'g'), function (s){
 					rule_custom_red++;
-					return '■㊀' + s +'■㊁';});
+					return 'ⓐ㊀' + s +'ⓐ㊁';});
 		}catch(e){
 			alert('カスタム(赤)の正規表現が不正です。\n' + custom_red);
 		}
@@ -306,7 +314,7 @@ function start_check(){
 		try{
 			text = text.replace(new RegExp(custom_gray, 'g'), function (s){
 					rule_custom_red++;
-					return '■㊂' + s +'■㊃';});
+					return 'ⓐ㊂' + s +'ⓐ㊃';});
 		}catch(e){
 			alert('カスタム(灰)の正規表現が不正です。\n' + custom_gray);
 		}
@@ -365,9 +373,13 @@ function start_check(){
 		text = text.replace(/([？！\?\!⁈⁉☆♡♥♪]+)([^？！\?\!])/g, function(s, s1, s2){
 			if( -1 == s2.search(/[　」』】≫〉》〕）］｝\)\n]/) ){
 				rule_question_space++;
-				return '<span class="rule_question_space">{！？空白}' + s1 + '</span>' + s2;
+				return '<span class="rule_question_space">{句読点空白}' + s1 + '</span>' + s2;
 			}
 			return s;
+		});
+		text = text.replace(/([、。])([　 \t])/g, function(s, s1, s2){
+			rule_question_space++;
+			return '<span class="rule_question_space">{句読点空白}' + s + '</span>';
 		});
 	}else{
 		rule_question_space = rule_no_check;
@@ -536,7 +548,8 @@ function start_check(){
 			line_type = 0;
 			if(text_type !== 'normal'){
 				var sub_head = text.substr(i + 1, 3);
-				if(sub_head === '　■。'){
+				if(sub_head === '　ⓐⓓ'){
+					ignore_mode = true;
 					// reset
 					for(; 0 < brackets; brackets--){
 						var s1 = '<span class="rule_bracket_pair">{括弧対応：未閉じ}</span></span>';
@@ -547,7 +560,7 @@ function start_check(){
 					brackets = 0;
 					brackets_types_arr = [];
 				}
-				if(sub_head === '　■◆' || sub_head === '　■●'){
+				if(sub_head === '　ⓐⓑ' || sub_head === '　ⓐⓒ'){
 					ignore_mode = true;
 				}else{
 					ignore_mode = false;
@@ -680,12 +693,14 @@ function start_check(){
 
 	var rule_kanji = 0;
 	var rule_kanji_jinmei = 0;
+	var rule_kanji_daiiti = 0;
 	var rule_kanji_surrogate = 0;
-	if(option_kanji || option_kanji_jinmei || option_kanji_ext || option_kanji_emoji_imp || option_kanji_etc_imp){
+	if(option_kanji || option_kanji_jinmei || option_kanji_daiiti || option_kanji_ext || option_kanji_emoji_imp || option_kanji_etc_imp){
 		var len = text.length;
 		var kanji = ret_kanji_list();
 		var kanji_jyoyo = kanji.jyoyo;
 		var kanji_jinmei = kanji.jinmei;
+		var kanji_daiiti = kanji.daiiti;
 		for(var i = 0; i < len; i++){
 			var cc = text.charCodeAt(i);
 			var cc1 = text.charCodeAt(i + 1);
@@ -771,7 +786,23 @@ function start_check(){
 					i += n;
 					rule_kanji_jinmei++;
 				}
-			}else{
+				continue;
+			}if(-1 != kanji_daiiti.indexOf(c0)){
+				if(option_kanji_daiiti){
+					var s1 = '<span class="rule_kanji_daiiti">';
+					if(option_kanji_daiiti_imp){
+						s1 = '<span class="rule_highlight">{第一漢字}</span>' + s1;
+					}
+					var s2 = '</span>';
+					text = text.substr(0, i) + s1 + c0 + s2 + text.substr(i + 1);
+					var n = s1.length + s2.length;
+					len += n;
+					i += n;
+					rule_kanji_daiiti++;
+				}
+				continue;
+			}
+			{
 				if(option_kanji){
 					var s1 = '<span class="rule_kanji">';
 					if(option_kanji_imp){
@@ -792,6 +823,9 @@ function start_check(){
 	}
 	if(!option_kanji_jinmei){
 		rule_kanji_jinmei = rule_no_check;
+	}
+	if(!option_kanji_daiiti){
+		rule_kanji_daiiti = rule_no_check;
 	}
 
 	var custom_span = function (rx_, begin_, end_, imp_, css_){
@@ -828,33 +862,33 @@ function start_check(){
 		});
 	}
 	if(0 < custom_red.length){
-		custom_span(/■[㊀㊁]|<span ([^\n>]+)>({?)|<\/span>/g, '■㊀', '■㊁',
+		custom_span(/ⓐ[㊀㊁]|<span ([^\n>]+)>({?)|<\/span>/g, 'ⓐ㊀', 'ⓐ㊁',
 			custom_red_imp ? '<span class="rule_highlight">{カスタム赤}</span>' : '',
 			'<span class="rule_custom_red">');
 	}
 	if(0 < custom_gray.length){
-		custom_span(/■[㊂㊃]|<span ([^\n>]+)>({?)|<\/span>/g, '■㊂', '■㊃',
+		custom_span(/ⓐ[㊂㊃]|<span ([^\n>]+)>({?)|<\/span>/g, 'ⓐ㊂', 'ⓐ㊃',
 			custom_gray_imp ? '<span class="rule_highlight">{カスタム灰}</span>' : '',
 			'<span class="rule_custom_gray">');
 	}
 
 	if(text_type !== 'normal'){
 		var replace_count = 0;
-		text = text.replace(/　■●。/g, function(){
+		text = text.replace(/　ⓐⓒ/g, function(){
 			var x = text_replace_list_img[replace_count];
 			replace_count++;
 			return x;
 		});
 		if(text_type === 'backup'){
-			text = text.replace(/　■◆。/g, '【サブタイトル】\n');
+			text = text.replace(/　ⓐⓑ/g, '【サブタイトル】\n');
 		}
 		replace_count = 0;
-		text = text.replace(/　■。/g, function(){
+		text = text.replace(/　ⓐⓓ。/g, function(){
 			var x = text_replace_list[replace_count];
 			replace_count++;
 			return x;
 		});
-		text = text.replace(/■□/g, '■');
+		text = text.replace(/ⓐⓩ/g, 'ⓐ');
 	}
 	if(text_head !== ''){
 		text = text_head + text;
@@ -890,7 +924,7 @@ function start_check(){
 
 	var rules = '<table class="rule_result">';
 	rules += '<tr class="rule_tr"><td class="rule_type">　　項目</td><td class="rule_type">　　値</td></tr>';
-	rules += '<tr class="rule_tr"><td class="rule_type">原稿用紙（' + html_escape(book)+ '行)</td><td class="rule_value">' + book_val_up + '.' + book_val_down + '枚</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">原稿用紙(' + html_escape(book)+ '行)</td><td class="rule_value">' + book_val_up + '.' + book_val_down + '枚</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">文字数(空白改行除く)</td><td class="rule_value">' + char_count + '文字</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">文字数(空白改行含む)</td><td class="rule_value">' + char_count_all + '文字</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">行数</td><td class="rule_value">' + line_count + '行</td></tr>';
@@ -903,7 +937,7 @@ function start_check(){
 	rules += '<tr class="rule_tr"><td class="rule_type">　　項目</td><td class="rule_type">　　検出数</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">行頭空白</td><td class="rule_value">　' + rule_linetop + '</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">空白括弧</td><td class="rule_value">　' + rule_bracket_indent + '</td></tr>';
-	rules += '<tr class="rule_tr"><td class="rule_type">！？空白</td><td class="rule_value">　' + rule_question_space + '</td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">句読点空白</td><td class="rule_value">　' + rule_question_space + '</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">括弧内改行</td><td class="rule_value">　' + rule_bracket_pair + '</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">括弧対応</td><td class="rule_value">　' + rule_bracket_pair2 + '</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">句読点括弧</td><td class="rule_value">　' + rule_bracket_period + '</td></tr>';
@@ -926,7 +960,7 @@ function start_check(){
 	}
 	rules += '</td></tr>';
 	rules += '<tr class="rule_tr"><td class="rule_type">表外漢字(常用人名以外)<br>　+サロゲート</td><td class="rule_value">　' + rule_kanji + '　※<span class="rule_kanji">背景色</span><br>　' + rule_kanji_surrogate + '</td></tr>';
-	rules += '<tr class="rule_tr"><td class="rule_type">人名漢字</td><td class="rule_value">　' + rule_kanji_jinmei + '　※<span class="rule_kanji_jinmei">背景色</span></td></tr>';
+	rules += '<tr class="rule_tr"><td class="rule_type">人名漢字<br>第一漢字</td><td class="rule_value">　' + rule_kanji_jinmei + '　※<span class="rule_kanji_jinmei">背景色</span><br>　' + rule_kanji_daiiti + '　※<span class="rule_kanji_daiiti">背景色</span></td></tr>';
 	if(0 < custom_red.length){
 		rules += '<tr class="rule_tr"><td class="rule_type">カスタム赤</td><td class="rule_value">　' + rule_custom_red + '　※<span class="rule_custom_red">背景色</span></td></tr>';
 	}
@@ -976,7 +1010,7 @@ function start_check_katakana(){
 	output += "\n■カナ罫線\n";
 	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[―—–‒－−─]+/g);
 	output += "\n■漢字[力口ニ]\n";
-	output += check_katakana(/[力口二][ァ-ヺ][ァ-ヺー゛゜゙゚]*/g);
+	output += check_katakana(/[力口二][ァ-ヺー゛゜゙゚]+/g);
 	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[力口二]/g);
 	var text = output.replace(/\n/g, "<br>")
 	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
@@ -999,45 +1033,101 @@ function start_check_kanji_listup(){
 
 	var rule_kanji = 0;
 	var rule_kanji_jinmei = 0;
+	var rule_kanji_daiiti = 0;
+	var rule_kanji_ext = 0;
 	
 	var len = text.length;
 	var kanji = ret_kanji_list();
 	var kanji_jyoyo = kanji.jyoyo;
 	var kanji_jinmei = kanji.jinmei;
+	var kanji_daiiti = kanji.daiiti;
 	var kanji_list = '';
 	var kanji_list_jinmei = '';
+	var kanji_list_daiiti = '';
+	var kanji_list_ext = ''; // サロゲート
 	for(var i = 0; i < len; i++){
-		var c = text.charAt(i);
-		if(!is_kanji(text.charCodeAt(i))){
-			continue;// 漢字以外
+		var cc = text.charCodeAt(i);
+		var cc1 = text.charCodeAt(i + 1);
+		var mozi = '';
+		if(0xD800 <= cc && cc <= 0xDBFF){
+			if(0xDC00 <= cc1 && cc1 <= 0xDFFF){
+				mozi = text.substr(i, 2); // サロゲート正常
+			}else{
+				// 不正シーケンス
+				mozi = text.substr(i, 1);
+			}
+		}else if(0xDC00 <= cc && cc <= 0xDFFF){
+			// 不正シーケンス
+			mozi = text.substr(i, 1);
 		}
-		if(-1 != kanji_jyoyo.indexOf(c)){
+		if( 0 < mozi.length){
+			if(2 === mozi.length){
+				i++;
+				var x = surrogate_to_codepoint(mozi);
+				if(0x1F300 <= x && x <= 0x1FFFF){
+					//絵文字->記号
+				}else if(0x20000 <= x && x <= 0x3FFFF){
+					//サロゲート漢字
+					if(-1 === kanji_list_ext.indexOf(mozi)){
+						kanji_list_ext += mozi;
+					}
+					rule_kanji_ext++;
+					continue;
+				}
+				//サロゲートその他
+				continue;
+			}
+			//サロゲート断片
 			continue;
 		}
-		if(-1 != kanji_jinmei.indexOf(c)){
-			if(-1 == kanji_list_jinmei.indexOf(c)){
+		if(!is_kanji(cc)){
+			continue;// 漢字以外
+		}
+		var c = text.charAt(i);
+		if(-1 !== kanji_jyoyo.indexOf(c)){
+			continue;
+		}
+		if(-1 !== kanji_jinmei.indexOf(c)){
+			if(-1 === kanji_list_jinmei.indexOf(c)){
 				kanji_list_jinmei += c;
 			}
 			rule_kanji_jinmei++;
-		}else{
-			if(-1 == kanji_list.indexOf(c)){
-				kanji_list += c;
-			}
-			rule_kanji++;
+			continue;
 		}
+		if(-1 !== kanji_daiiti.indexOf(c)){
+			if(-1 === kanji_list_daiiti.indexOf(c)){
+				kanji_list_daiiti += c;
+			}
+			rule_kanji_daiiti++;
+			continue;
+		}
+		if(-1 === kanji_list.indexOf(c)){
+			kanji_list += c;
+		}
+		rule_kanji++;
 	}
-	kanji_len = kanji_list.length;
-	kanji_jinmei_len = kanji_list_jinmei.length;
+	var kanji_len = kanji_list.length;
+	var kanji_jinmei_len = kanji_list_jinmei.length;
+	var kanji_daiiti_len = kanji_list_daiiti.length;
+	var kanji_ext_len = kanji_list_ext.length / 2;
 
 	kanji_list = kanji_list.replace(/.{20}/g, "$&\n");
 	kanji_list_jinmei = kanji_list_jinmei.replace(/.{20}/g, "$&\n");
+	kanji_list_daiiti = kanji_list_daiiti.replace(/.{20}/g, "$&\n");
+	kanji_list_ext = kanji_list_ext.replace(/.{40}/g, "$&\n");
 
-	output += '■使用表外漢字一覧(常用+人名以外)\n';
+	output += '■使用第一表外漢字一覧((常用+人名+第一水準)以外)\n';
 	output += kanji_len + '字 ' + rule_kanji + '箇所\n'
 	output += kanji_list;
 	output += '\n■使用人名漢字一覧\n';
 	output += kanji_jinmei_len + '字 ' + rule_kanji_jinmei + '箇所\n'
 	output += kanji_list_jinmei;
+	output += '\n■使用第一水準((人名+常用)以外)漢字一覧\n';
+	output += kanji_daiiti_len + '字 ' + rule_kanji_daiiti + '箇所\n'
+	output += kanji_list_daiiti;
+	output += '\n■サロゲート漢字一覧\n';
+	output += kanji_ext_len + '字 ' + rule_kanji_ext + '箇所\n'
+	output += kanji_list_ext;
 
 	var text = output.replace(/\n/g, "<br>")
 	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
@@ -1118,6 +1208,18 @@ function ret_kanji_list(){
 	'梅橫欄步歷每海涉淚渚渴溫漢瀨焰煮狀猪琢碑社祉祈祐祖祝神祥禍禎' +
 	'福禱穀突節簞綠緖緣練繁繡署者臭萊著蔣薰虛虜蟬蠟視諸謁謹賓賴贈' +
 	'逸郞都醬錄鍊難響顚類鷗黃黑瘦繫';
+	var jinmei_cp932 = '增寬德朗橫瀨猪神祥福綠緖薰諸賴郞都黑';
 
-	return {jyoyo:jyoyo, jinmei:jinmei};
+	var daiiti =
+	'乍什仇佼侠侭倶僑僻兇凋剃剥劃匙匝匪卦厭叛叩叱吃吊吋吠呆呑咋咳' +
+	'唖嘘噛噸噺嚢坤垢埠塘填塵壷夙妓妾姐姑姦姶娼婁嬬嬰宍屍屠屡岨岱' +
+	'庖廓廠廼弗弼彊怯悶愈慾戎扮捌掩掴掻揖摸撚撹擾斌杓杢柁栂栢栴桓' +
+	'桝梱梼棉椙椴楳榔樗樵橡橿櫨欝歪洩涌涛涜淘渠溌漉潅澗澱濠瀞瀦烹' +
+	'焔煽熔燐爺牌牝牢狐狗狛狸狽猷珪甑甜畦畷疹痔癌盈矧砺砿硲碇碍碕' +
+	'禦禿稗穆穎穐竃笥筏箆箪箭篭簸粁粂粍粕糎糞糟糠綬緬繋繍罫翫翰聯' +
+	'聾肱脆腿膿舘舛艮苅苓苧苫荊荏莱菟菰葎葱蒋蒜蔀蔚蕊蕩薮薯藷虻蚤' +
+	'蛋蛎蛙蛤蛭蛸蛾蜘蝉蝋蝕蝿蟻袷覗詑誹諌諜謬讐賎贋赫趨躯轍轡迩逼' +
+	'酋醗醤釆釦鈎鈷鉦鉾銚鋤鋪鋲錨鍍鍔鍾鎗鎚鏑鐙鐸鑓靭韮頚頬頴顛飴' +
+	'餐駁騨髭鮒鮪鮫鮭鯖鯵鰍鰐鰭鰹鰻鱈鴇鴎鴛鴫鴬鵠鵡鹸麹黍鼠';
+	return {jyoyo:jyoyo, jinmei:jinmei, daiiti:daiiti};
 }
