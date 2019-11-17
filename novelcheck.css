@@ -5,8 +5,8 @@
 body {color:#000; background-color:#fff}
 h1 {background-color:#ddf}
 
-div.result {font-family:"ＭＳ ゴシック";}
-div.resultext {border:1px solid #000; font-family:"ＭＳ ゴシック"; word-wrap: break-word;}
+div.result {font-family:"ＭＳ ゴシック", Meiryo;}
+div.resultext {border:1px solid #000; font-family:"ＭＳ ゴシック", Meiryo; word-wrap: break-word;}
 
 table.rule_result {border-collapse:collapse; border:2px solid #000}
 tr.rule_tr {border:1px solid #000}

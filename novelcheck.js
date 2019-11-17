@@ -371,7 +371,7 @@ function start_check(){
 	var rule_question_space = 0;
 	if(option_question_space){
 		text = text.replace(/([？！\?\!⁈⁉☆♡♥♪]+)([^？！\?\!])/g, function(s, s1, s2){
-			if( -1 == s2.search(/[　」』】≫〉》〕）］｝\)\n]/) ){
+			if( -1 == s2.search(/[　」』】≫〉》〕）］｝《（\)\n]/) ){
 				rule_question_space++;
 				return '<span class="rule_question_space">{句読点空白}' + s1 + '</span>' + s2;
 			}
@@ -380,6 +380,14 @@ function start_check(){
 		text = text.replace(/([、。])([　 \t])/g, function(s, s1, s2){
 			rule_question_space++;
 			return '<span class="rule_question_space">{句読点空白}' + s + '</span>';
+		});
+		text = text.replace(/([\n「『【≪〈《〔（［｛])([、。])/g, function(s, s1, s2){
+			rule_question_space++;
+			return s1 + '<span class="rule_question_space">{文頭句読点}' + s2 + '</span>';
+		});
+		text = text.replace(/([　 \t])([、。])/g, function(s, s1, s2){
+			rule_question_space++;
+			return s1 + '<span class="rule_question_space">{空白句読点}' + s2 + '</span>';
 		});
 	}else{
 		rule_question_space = rule_no_check;
@@ -402,14 +410,29 @@ function start_check(){
 	}
 
 	var rule_santen = 0;
+	var rule_santen_mix = false;
 	if(option_santen){
+		var find_santen = 0;
 		text = text.replace(/…+/g, function(s){
+			find_santen++;
 			if( s.length % 2 !== 0 ){
 				rule_santen++;
 				return '<span class="rule_santen">{三点リーダ}' + s + '</span>';
 			}
 			return s;
 		});
+		var find_santen_ex = 0;
+		text = text.replace(/⋯+/g, function(s){
+			find_santen_ex++;
+			if( s.length % 2 !== 0 ){
+				rule_santen++;
+				return '<span class="rule_santen">{三点リーダ}' + s + '</span>';
+			}
+			return s;
+		});
+		if(0 < find_santen && 0 < find_santen_ex){
+			rule_santen_mix = true;
+		}
 		text = text.replace(/([\(（《]?)(・(・+))([\)）》]?)/g, function(s,g1,g2,g3,g4){
 			if(g1 !== '' && g4 !== ''){
 				var x = '(（《'.indexOf(g1);
@@ -571,7 +594,7 @@ function start_check(){
 				text = text.substr(0, i) + s1 + text.substr(i);
 				i += s1.length;
 			}
-		} else if( -1 !== mozi.search(/[”〟―…─,\.。、，．？！\?\!⁈⁉☆♡♥♪]/) ){
+		} else if( -1 !== mozi.search(/[”〟―…⋯─\.。．？！\?\!⁈⁉!!☆★♡♥♪♫♬♩]/) ){
 			prev = true;
 		} else {
 			if( line_type === 0 ){
@@ -858,7 +881,7 @@ function start_check(){
 			if(hit_level){
 				return '</span></span>' + css_;
 			}
-			return '</span>'
+			return '</span>';
 		});
 	}
 	if(0 < custom_red.length){
@@ -918,6 +941,9 @@ function start_check(){
 				return '';
 		});
 		text = text.replace(/\n+/g, "\n");
+	}
+	if(rule_santen_mix){
+		text = '<span class="rule_santen">※{三点リーダ}……(U+2026)と⋯⋯(U+22EF)が混在しています。</span>\n' + text;
 	}
 
 	text = text.replace(/\n/g, "<br>\n");
@@ -1009,9 +1035,9 @@ function start_check_katakana(){
 	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[へべぺ]+/g);
 	output += "\n■カナ罫線\n";
 	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[―—–‒－−─]+/g);
-	output += "\n■漢字[力口ニ]\n";
-	output += check_katakana(/[力口二][ァ-ヺー゛゜゙゚]+/g);
-	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[力口二]/g);
+	output += "\n■漢字[力口□ニ]\n";
+	output += check_katakana(/[力口□二][ァ-ヺー゛゜゙゚]+/g);
+	output += check_katakana(/[ァ-ヺ][ァ-ヺー゛゜゙゚]*[力口□二]/g);
 	var text = output.replace(/\n/g, "<br>")
 	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
 }
