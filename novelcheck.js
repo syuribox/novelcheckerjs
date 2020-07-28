@@ -343,7 +343,7 @@ function start_check(){
 
 	var rule_linetop = 0;
 	if(option_linetop){
-		text = text.replace(/^[^「『【≪〈《〔（［｛\(　\n]/mg, function(s){
+		text = text.replace(/^[^「『【≪〈《〔（［｛＜\(　\n]/mg, function(s){
 			rule_linetop++;
 			return '<span class="rule_linetop">{行頭空白}</span>' + s;
 		});
@@ -352,7 +352,7 @@ function start_check(){
 	}
 	var rule_bracket_indent = 0;
 	if(option_bracket_indent){
-		text = text.replace(/^[　 \t]+[「『【≪〈《〔（［｛\)]/mg, function(s){
+		text = text.replace(/^[　 \t]+[「『【≪〈《〔（［｛＜\)]/mg, function(s){
 			rule_bracket_indent++;
 			return '<span class="rule_bracket_indent">{空白括弧}</span>' + s;
 		});
@@ -361,7 +361,7 @@ function start_check(){
 	}
 	var rule_bracket_period = 0;
 	if(option_bracket_period){
-		text = text.replace(/[,\.。、，．][」』】≫〉》〕）］｝\)]/g, function(s){
+		text = text.replace(/[,\.。、，．][」』】≫〉》〕）］｝＞\)]/g, function(s){
 			rule_bracket_period++;
 			return '<span class="rule_bracket_indent">{句読点括弧}' + s.substr(0,1) + '</span>' + s.substr(1);
 		});
@@ -371,7 +371,7 @@ function start_check(){
 	var rule_question_space = 0;
 	if(option_question_space){
 		text = text.replace(/([？！\?\!⁈⁉☆♡♥♪]+)([^？！\?\!])/g, function(s, s1, s2){
-			if( -1 == s2.search(/[　」』】≫〉》〕）］｝《（\)\n]/) ){
+			if( -1 == s2.search(/[　」』】≫〉》〕）］｝＞《（\)\n]/) ){
 				rule_question_space++;
 				return '<span class="rule_question_space">{句読点空白}' + s1 + '</span>' + s2;
 			}
@@ -381,7 +381,7 @@ function start_check(){
 			rule_question_space++;
 			return '<span class="rule_question_space">{句読点空白}' + s + '</span>';
 		});
-		text = text.replace(/([\n「『【≪〈《〔（［｛])([、。])/g, function(s, s1, s2){
+		text = text.replace(/([\n「『【≪〈《〔（［｛＜])([、。])/g, function(s, s1, s2){
 			rule_question_space++;
 			return s1 + '<span class="rule_question_space">{文頭句読点}' + s2 + '</span>';
 		});
@@ -549,16 +549,19 @@ function start_check(){
 				}
 			}
 			if( prev === false && ignore_mode === false && option_line_end){
-				var s3 = '<span class="rule_line_end">＿</span>';
-				var s3imp = '<span class="rule_line_end_imp">{行末文字}</span>';
-				var s3_;
-				if( option_line_end_imp ){
-					s3_ = s3imp;
-				}else{
-					s3_ = s3;
+				if( text.substr(i-1, 1) !== '＞' ){
+					// ＞は括弧ではないので個別チェックする(暫定)
+					var s3 = '<span class="rule_line_end">＿</span>';
+					var s3imp = '<span class="rule_line_end_imp">{行末文字}</span>';
+					var s3_;
+					if( option_line_end_imp ){
+						s3_ = s3imp;
+					}else{
+						s3_ = s3;
+					}
+					text = text.substr(0, i) + s3_ + text.substr(i);
+					i += s3_.length;
 				}
-				text = text.substr(0, i) + s3_ + text.substr(i);
-				i += s3_.length;
 				rule_line_end++;
 			}
 			prev = true;
