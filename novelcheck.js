@@ -1252,3 +1252,63 @@ function ret_kanji_list(){
 	'餐駁騨髭鮒鮪鮫鮭鯖鯵鰍鰐鰭鰹鰻鱈鴇鴎鴛鴫鴬鵠鵡鹸麹黍鼠';
 	return {jyoyo:jyoyo, jinmei:jinmei, daiiti:daiiti};
 }
+function start_check_moji_count(){
+	var text = get_id('maintext').value;
+	text = text.replace(/\r\n/g, "\n").replace(/\n+$/g, "");
+	text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+	var text_lines = text.split('\n');
+
+	var last = text_lines.length;
+	var count = 0;
+	var all = 0;
+	var data = "";
+	var part = 0;
+	var pre = "";
+	var leftpad = function(a, b){
+		var x = "                  " + a;
+		return x.substr(x.length - b);
+	}
+	var head = '■';
+	var line;
+	var c;
+	for(var i = 0; i < last; i++){
+		line = text_lines[i];
+		c = line.charAt(0);
+		var heads ="■◆●▲▼";
+		var index = heads.indexOf(c);
+		if(-1 < index){
+			head = heads.charAt(index);
+			break;
+		}
+	}
+	for(var i = 0; i < last; i++){
+		line = text_lines[i];
+		c = line.charAt(0);
+		if(c === head){
+			if(0 < all){
+				data += leftpad(count, 6) + "  ";
+				all += count;
+				if(10 <= count){
+					part++;
+				}
+			}else{
+				all = 1;
+			}
+			count = 0;
+			data += pre + '\n';
+			pre = line;
+		}else{
+			count += line.replace(/[　 \r\n\t]/g, "").length;
+		}
+	}
+	data += leftpad(count, 6) + "  ";
+	all += count;
+	all -= 1;
+	data += pre + '\n';
+	data += "" + leftpad(all, 6) + "  合計\r";
+	data += "平均    " + leftpad(part + 1, 4) + " * " + Math.floor(all/(part+1)) + "\n";
+	data += "平均-1  " + leftpad(part, 4) + " * " + Math.floor(all/(part)) + "\n";
+	var text = data.replace(/\n/g, "<br>")
+	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
+}
