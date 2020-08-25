@@ -1301,7 +1301,9 @@ function start_check_moji_count(){
 				all = 1;
 			}
 			count = 0;
-			data += pre + '\n';
+			if(pre != ''){
+				data += pre + '\n';
+			}
 			pre = line;
 		}else{
 			count += line.replace(/[　 \r\n\t]/g, "").length;
@@ -1314,7 +1316,6 @@ function start_check_moji_count(){
 	data += "" + leftpad(all, 6) + "  合計\r";
 	data += "平均    " + leftpad(part + 1, 4) + " * " + Math.floor(all/(part+1)) + "\n";
 	data += "平均-1  " + leftpad(part, 4) + " * " + Math.floor(all/(part)) + "\n";
-	data = '<pre>' + data + '<pre>';
 	var text = data.replace(/\n/g, "<br>")
-	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
+	get_id('result').innerHTML = '<div class="resultext" style="white-space:pre-wrap;">' + text + '</div>';
 }
