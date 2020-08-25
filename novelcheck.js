@@ -46,6 +46,9 @@ function area_sample(){
 	sample += '　ダッシュには「あほーー」のような伸ばし棒が2つ以上の場合も警告表示されてしまいますが、問題ない場合もあります。ダッシュと伸ばし棒の書き間違いなら修正してください。\n'
 	sample += '　空白括弧には行頭に行に埋め込まれた括弧文があるとそれも警告されてしまいます。\n'
 	sample += '　常用漢字のリストには第三水準の「塡剝頰𠮟」を含めていません。「塡剝頰」は表外漢字の警告対象です。「𠮟」はサロゲート漢字として検出されます。\n';
+	sample += '■第二話\n';
+	sample += '　このように1文字目に置いてある■◆●▲▼のうち最初に現れるものを話の区切りと認識して、各話ごとの本文の文字数(改行空白を除く)を数えます。\n';
+	sample += '　平均-1は末尾に「■終了」などのマークがあっても一つ少ない話数でカウントできるようになっています。\n';
 	get_id('maintext').value = sample;
 }
 
@@ -1311,6 +1314,7 @@ function start_check_moji_count(){
 	data += "" + leftpad(all, 6) + "  合計\r";
 	data += "平均    " + leftpad(part + 1, 4) + " * " + Math.floor(all/(part+1)) + "\n";
 	data += "平均-1  " + leftpad(part, 4) + " * " + Math.floor(all/(part)) + "\n";
+	data = '<pre>' + data + '<pre>';
 	var text = data.replace(/\n/g, "<br>")
 	get_id('result').innerHTML = '<div class="resultext">' + text + '</div>';
 }
