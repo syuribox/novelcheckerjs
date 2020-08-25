@@ -1272,14 +1272,16 @@ function start_check_moji_count(){
 	var head = '■';
 	var line;
 	var c;
+	var heads ="■◆●▲▼";
 	for(var i = 0; i < last; i++){
 		line = text_lines[i];
 		c = line.charAt(0);
-		var heads ="■◆●▲▼";
-		var index = heads.indexOf(c);
-		if(-1 < index){
-			head = heads.charAt(index);
-			break;
+		if(c != ''){
+			var index = heads.indexOf(c);
+			if(-1 < index){
+				head = heads.charAt(index);
+				break;
+			}
 		}
 	}
 	for(var i = 0; i < last; i++){
