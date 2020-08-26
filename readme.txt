@@ -9,4 +9,4 @@ Github Pages で公開しているので、web上でそのままご利用の場�
 https://syuribox.github.io/novelcheckerjs/
 
 
-(c)2018 えびえび/syuribox
+(c)2018-2020 syuribox

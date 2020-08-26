@@ -30,6 +30,7 @@ function area_sample(){
 	sample += '行頭空白。\n';
 	sample += '　「空白括弧」\n';
 	sample += '　疑問符の後の空白？　です？例外：「括弧の直前？」連続！？　疑問符！！！\n';
+	sample += '「大丈夫です？……」「大丈夫です……？」\n';
 	sample += '句読後の空白、　句点後の空白。　行末でも有効。　\n';
 	sample += '「セリフの句読点括弧。」\n';
 	sample += '『あいうえお。\n';
@@ -252,6 +253,8 @@ function start_check(){
 	var text_replace_list = [];
 	var text_replace_list_img = [];
 	var text_type = 'normal';
+	var head_char = '';
+	var head_types = '■◆●▲▼';
 	if(text.substr(0,8) === '【ユーザ情報】\n'){
 		// narou backup format
 		var start_one = '\n------------------------- 第1部分開始 -------------------------\n';
@@ -298,6 +301,11 @@ function start_check(){
 			text_replace_list_img.push(s);
 			return '　ⓐⓒ';
 		});
+	}else{
+		// text_type === 'normal'
+		text.replace(/^[■◆●▲▼]/m, function(s){
+				head_char = s;
+			});
 	}
 
 	var rule_custom_red = 0;
@@ -374,7 +382,7 @@ function start_check(){
 	var rule_question_space = 0;
 	if(option_question_space){
 		text = text.replace(/([？！\?\!⁈⁉☆♡♥♪]+)([^？！\?\!])/g, function(s, s1, s2){
-			if( -1 == s2.search(/[　」』】≫〉》〕）］｝＞《（\)\n]/) ){
+			if( -1 == s2.search(/[　」』】≫〉》〕）］｝＞《（\)…―─\n]/) ){
 				rule_question_space++;
 				return '<span class="rule_question_space">{句読点空白}' + s1 + '</span>' + s2;
 			}
@@ -461,6 +469,7 @@ function start_check(){
 	var ignore_mode = false;
 	var brackets_line = 0;
 	var brackets_types_arr = [];
+	var bracket_pair_begin = 0;
 	var normal_line = 0;
 	var line_type = 0;
 	var line_num = 1;
@@ -543,8 +552,10 @@ function start_check(){
 			prev = true;
 		} else if( mozi === '\n' ){
 			prev_eol = true;
+			var bracket_pair_begin_temp = bracket_pair_begin;
+			bracket_pair_begin = brackets;
 			if( option_bracket_pair ){
-				if( 0 < brackets && brackets <= 5 ){
+				if(0 < brackets && brackets != bracket_pair_begin_temp){
 					var s1 = '<span class="rule_bracket_pair">{括弧内改行}</span>';
 					text = text.substr(0, i) + s1 + text.substr(i);
 					i += s1.length;
@@ -588,9 +599,34 @@ function start_check(){
 					}
 					brackets = 0;
 					brackets_types_arr = [];
+					bracket_pair_begin = 0;
 				}
 				if(sub_head === '　ⓐⓑ' || sub_head === '　ⓐⓒ'){
 					ignore_mode = true;
+				}else{
+					ignore_mode = false;
+				}
+			}else{
+				// text_type == normal;
+				var head = text.charAt(i + 1);
+				var head_sub_match = false;
+				if('<' === head){
+					if(-1 != text.substr(i + 1, 1000).indexOf('{行頭空白}</span>' + head_char)){
+						head_sub_match = true;
+					}
+				}
+				if(head_char !== '' && (head_char === head || head_sub_match)){
+					ignore_mode = true;
+					// reset
+					for(; 0 < brackets; brackets--){
+						var s1 = '<span class="rule_bracket_pair">{括弧対応：未閉じ}</span></span>';
+						text = text.substr(0, i) + s1 + text.substr(i);
+						i += s1.length;
+						rule_bracket_pair2++;
+					}
+					brackets = 0;
+					brackets_types_arr = [];
+					bracket_pair_begin = 0;
 				}else{
 					ignore_mode = false;
 				}
