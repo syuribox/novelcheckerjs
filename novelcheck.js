@@ -508,13 +508,14 @@ function start_check(){
 			brackets--;
 			if( 0 <= brackets ){
 				var postion = brackets_types_arr.length - 1;
+				var pos_old = postion;
 				for(; 0 <= postion; postion--){
 					if( brackets_types_arr[postion] === brackets_types_2 ){
 						brackets_types_arr.splice(postion, 1);
 						break;
 					}
 				}
-				if( postion < 0 ){
+				if( pos_old !== postion ){
 					if(option_bracket_pair2){
 						var s1 = '<span class="rule_bracket_pair">{括弧対応：種別}</span>';
 						text = text.substr(0, i) + s1 + text.substr(i);
